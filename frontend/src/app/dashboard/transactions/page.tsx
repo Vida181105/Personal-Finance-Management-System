@@ -220,7 +220,7 @@ export default function TransactionsPage() {
                       <td className="hidden sm:table-cell px-2 sm:px-6 py-2 sm:py-3">
                         <span
                           className={`inline-block px-2 sm:px-3 py-1 rounded-full text-xs font-medium ${
-                            transaction.type === 'Income' || transaction.type === 'income'
+                            transaction.type === 'income'
                               ? 'bg-green-100 text-green-800'
                               : 'bg-red-100 text-red-800'
                           }`}
