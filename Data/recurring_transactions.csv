@@ -1,0 +1,80 @@
+recurringId,userId,merchantName,category,amount,frequency,startDate
+REC001,U001,Airtel,Utilities,399,Monthly,2024-01-05
+REC002,U001,Jio,Utilities,499,Monthly,2024-01-10
+REC003,U001,BYJU'S,Subscriptions,1500,Monthly,2024-01-01
+REC004,U001,Coursera,Subscriptions,599,Monthly,2024-02-01
+REC005,U001,Gold's Gym,Entertainment,1500,Monthly,2024-01-15
+REC006,U002,Landlord,Rent,20000,Monthly,2024-01-01
+REC007,U002,Jio,Utilities,600,Monthly,2024-01-05
+REC008,U002,Airtel,Utilities,599,Monthly,2024-01-05
+REC009,U002,Netflix,Subscriptions,649,Monthly,2024-01-01
+REC010,U002,HDFC Life,Insurance,2000,Monthly,2024-01-01
+REC011,U002,Gold's Gym,Entertainment,1500,Monthly,2024-01-15
+REC012,U003,Landlord,Rent,28000,Monthly,2024-01-01
+REC013,U003,Jio,Utilities,600,Monthly,2024-01-05
+REC014,U003,VI,Utilities,599,Monthly,2024-01-05
+REC015,U003,Netflix,Subscriptions,899,Monthly,2024-01-01
+REC016,U003,Spotify,Subscriptions,119,Monthly,2024-01-01
+REC017,U003,AXA Life,Insurance,2500,Monthly,2024-01-01
+REC018,U004,Landlord,Rent,24000,Monthly,2024-01-01
+REC019,U004,Airtel,Utilities,600,Monthly,2024-01-05
+REC020,U004,Jio,Utilities,599,Monthly,2024-01-05
+REC021,U004,Netflix,Subscriptions,649,Monthly,2024-01-01
+REC022,U004,Disney+ Hotstar,Subscriptions,499,Monthly,2024-01-01
+REC023,U004,HDFC Life,Insurance,2500,Monthly,2024-01-01
+REC024,U004,LinkedIn Premium,Subscriptions,999,Monthly,2024-01-01
+REC025,U005,Landlord,Rent,32000,Monthly,2024-01-01
+REC026,U005,Jio,Utilities,800,Monthly,2024-01-05
+REC027,U005,Airtel,Utilities,599,Monthly,2024-01-05
+REC028,U005,Netflix,Subscriptions,999,Monthly,2024-01-01
+REC029,U005,Spotify,Subscriptions,199,Monthly,2024-01-01
+REC030,U005,AXA Life,Insurance,3000,Monthly,2024-01-01
+REC031,U005,HDFC Bank,Rent,15000,Monthly,2024-01-01
+REC032,U006,Landlord,Rent,32000,Monthly,2024-01-01
+REC033,U006,Jio,Utilities,600,Monthly,2024-01-05
+REC034,U006,VI,Utilities,599,Monthly,2024-01-05
+REC035,U006,Netflix,Subscriptions,1299,Monthly,2024-01-01
+REC036,U006,Spotify,Subscriptions,99,Monthly,2024-01-01
+REC037,U006,Canva,Subscriptions,1200,Yearly,2024-01-01
+REC038,U006,HDFC Life,Insurance,2500,Monthly,2024-01-01
+REC039,U007,Landlord,Rent,55000,Monthly,2024-01-01
+REC040,U007,Jio,Utilities,900,Monthly,2024-01-05
+REC041,U007,Airtel,Utilities,599,Monthly,2024-01-05
+REC042,U007,VI,Utilities,599,Monthly,2024-01-05
+REC043,U007,Netflix,Subscriptions,3500,Monthly,2024-01-01
+REC044,U007,BYJU'S,Subscriptions,2800,Monthly,2024-01-01
+REC045,U007,DPS Bangalore,Education,18000,Monthly,2024-01-01
+REC046,U007,HDFC Life,Insurance,4000,Monthly,2024-01-01
+REC047,U007,HDFC Bank,Rent,18000,Monthly,2024-01-01
+REC048,U007,TATA Power,Utilities,3400,Monthly,2024-01-01
+REC049,U008,Landlord,Rent,48000,Monthly,2024-01-01
+REC050,U008,Jio,Utilities,800,Monthly,2024-01-05
+REC051,U008,Airtel,Utilities,599,Monthly,2024-01-05
+REC052,U008,VI,Utilities,599,Monthly,2024-01-05
+REC053,U008,Netflix,Subscriptions,1299,Monthly,2024-01-01
+REC054,U008,Spotify,Subscriptions,2200,Monthly,2024-01-01
+REC055,U008,AXA Life,Insurance,3500,Monthly,2024-01-01
+REC056,U008,HDFC Bank,Rent,16000,Monthly,2024-01-01
+REC057,U009,Landlord,Rent,62000,Monthly,2024-01-01
+REC058,U009,Jio,Utilities,900,Monthly,2024-01-05
+REC059,U009,Airtel,Utilities,699,Monthly,2024-01-05
+REC060,U009,VI,Utilities,599,Monthly,2024-01-05
+REC061,U009,Netflix,Subscriptions,4500,Monthly,2024-01-01
+REC062,U009,BYJU'S,Subscriptions,3500,Monthly,2024-01-01
+REC063,U009,Disney+ Hotstar,Subscriptions,1999,Monthly,2024-01-01
+REC064,U009,Sri Chaitanya School,Education,22000,Monthly,2024-01-01
+REC065,U009,Max Healthcare,Insurance,5000,Monthly,2024-01-01
+REC066,U009,HDFC Bank,Rent,20000,Monthly,2024-01-01
+REC067,U010,Landlord,Rent,76000,Monthly,2024-01-01
+REC068,U010,Jio,Utilities,1200,Monthly,2024-01-05
+REC069,U010,Airtel,Utilities,799,Monthly,2024-01-05
+REC070,U010,VI,Utilities,799,Monthly,2024-01-05
+REC071,U010,Netflix,Subscriptions,5500,Monthly,2024-01-01
+REC072,U010,Spotify,Subscriptions,4000,Monthly,2024-01-01
+REC073,U010,Disney+ Hotstar,Subscriptions,3200,Monthly,2024-01-01
+REC074,U010,Hotstar Premium,Subscriptions,3200,Monthly,2024-01-01
+REC075,U010,BYJU'S,Subscriptions,3500,Monthly,2024-01-01
+REC076,U010,DPS Delhi,Education,28000,Monthly,2024-01-01
+REC077,U010,Max Healthcare,Insurance,6000,Monthly,2024-01-01
+REC078,U010,HDFC Bank,Rent,25000,Monthly,2024-01-01
+REC079,U010,HDFC Life,Insurance,5000,Yearly,2024-01-15

@@ -1,0 +1,81 @@
+merchantId,merchantName,defaultCategory
+M001,BigBasket,C003
+M002,Blinkit,C003
+M003,DMart,C003
+M004,Reliance Fresh,C003
+M005,Nature's Basket,C003
+M006,More Supermarket,C003
+M007,Zomato,C004
+M008,Swiggy,C004
+M009,Dominos,C004
+M010,Pizza Hut,C004
+M011,Mc Donalds,C004
+M012,Starbucks,C004
+M013,Cafe Coffee Day,C004
+M014,Subway,C004
+M015,KFC,C004
+M016,Uber,C005
+M017,Ola Cabs,C005
+M018,Metro Card,C005
+M019,MTC Buses,C005
+M020,Indian Railways,C005
+M021,Shell Petrol Pump,C005
+M022,BP Gas Station,C005
+M023,Jio Postpaid,C006
+M024,Airtel Postpaid,C006
+M025,VI Network,C006
+M026,BSNL,C006
+M027,Tata Power,C006
+M028,Mumbai Electricity,C006
+M029,Delhi Jal Board,C006
+M030,Netflix,C007
+M031,Amazon Prime Video,C007
+M032,Disney+ Hotstar,C007
+M033,SonyLiv,C007
+M034,Spotify,C007
+M035,Amazon Music,C007
+M036,YouTube Premium,C007
+M037,Adobe Creative Cloud,C007
+M038,Microsoft 365,C007
+M039,BookMyShow,C008
+M040,PVR Cinemas,C008
+M041,INOX Movies,C008
+M042,Gamify,C008
+M043,PlayStation Network,C008
+M044,Steam Games,C008
+M045,Amazon Shopping,C009
+M046,Flipkart,C009
+M047,Myntra,C009
+M048,Ajio,C009
+M049,Uniqlo,C009
+M050,Decathlon,C009
+M051,Nykaa,C009
+M052,Apollo Pharmacy,C010
+M053,Max Healthcare,C010
+M054,Apollo Hospitals,C010
+M055,Practo,C010
+M056,1mg,C010
+M057,NetMed,C010
+M058,AIIMS Delhi,C010
+M059,Dr Agarwal Eye Hospital,C010
+M060,Udemy,C011
+M061,Coursera,C011
+M062,BYJU'S,C011
+M063,Unacademy,C011
+M064,Vedantu,C011
+M065,MakeMyTrip,C012
+M066,GoIbibo,C012
+M067,Cleartrip,C012
+M068,Agoda,C012
+M069,OYO Rooms,C012
+M070,AirBnB,C012
+M071,ICICI Prudential,C013
+M072,HDFC Life,C013
+M073,Bajaj Allianz,C013
+M074,SBI Life,C013
+M075,Star Health,C013
+M076,General Stores Local,C014
+M077,Pantaloons,C009
+M078,Westside,C009
+M079,Shoppers Stop,C009
+M080,Forever 21,C009

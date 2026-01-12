@@ -1,0 +1,15 @@
+categoryId,categoryName,type
+C001,Income,income
+C002,Rent,expense
+C003,Groceries,expense
+C004,Food & Dining,expense
+C005,Transport,expense
+C006,Utilities,expense
+C007,Subscriptions,expense
+C008,Entertainment,expense
+C009,Shopping,expense
+C010,Healthcare,expense
+C011,Education,expense
+C012,Travel,expense
+C013,Insurance,expense
+C014,Miscellaneous,expense

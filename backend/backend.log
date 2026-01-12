@@ -1,0 +1,8 @@
+
+> personal-finance-backend@1.0.0 start
+> node server.js
+
+Server running on port 8888
+Environment: development
+MongoDB connected successfully
+📊 Query result for userId=U001: found 300 total, returning 10
