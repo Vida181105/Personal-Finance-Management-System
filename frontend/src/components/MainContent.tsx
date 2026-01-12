@@ -1,6 +1,5 @@
 'use client';
 
-import { useSidebar } from '@/context/SidebarContext';
 import { usePathname } from 'next/navigation';
 
 export function MainContent({ children }: { children: React.ReactNode }) {
