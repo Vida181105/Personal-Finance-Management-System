@@ -230,12 +230,12 @@ export default function TransactionsPage() {
                       </td>
                       <td
                         className={`px-2 sm:px-6 py-2 sm:py-3 font-semibold text-right whitespace-nowrap ${
-                          transaction.type === 'Income' || transaction.type === 'income'
+                          transaction.type === 'income'
                             ? 'text-green-600'
                             : 'text-red-600'
                         }`}
                       >
-                        {transaction.type === 'Income' || transaction.type === 'income' ? '+' : '-'}₹{transaction.amount.toLocaleString()}
+                        {transaction.type === 'income' ? '+' : '-'}₹{transaction.amount.toLocaleString()}
                       </td>
                       <td className="px-2 sm:px-6 py-2 sm:py-3 text-center space-x-1 sm:space-x-2">
                         <Link href={`/dashboard/transactions/${transaction._id}`}>
