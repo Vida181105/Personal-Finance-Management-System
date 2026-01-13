@@ -222,7 +222,7 @@ export default function TransactionsPage() {
                           className={`inline-block px-2 sm:px-3 py-1 rounded-full text-xs font-medium ${
                             transaction.type?.toLowerCase() === 'income'
                               ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
+                              : 'bg-green-100 text-green-800'
                           }`}
                         >
                           {transaction.type}
@@ -232,7 +232,7 @@ export default function TransactionsPage() {
                         className={`px-2 sm:px-6 py-2 sm:py-3 font-semibold text-right whitespace-nowrap ${
                           transaction.type?.toLowerCase() === 'income'
                             ? 'text-green-600'
-                            : 'text-red-600'
+                            : 'text-green-600'
                         }`}
                       >
                         {transaction.type?.toLowerCase() === 'income' ? '+' : '-'}₹{transaction.amount.toLocaleString()}
