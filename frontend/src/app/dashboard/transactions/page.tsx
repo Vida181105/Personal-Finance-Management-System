@@ -220,9 +220,9 @@ export default function TransactionsPage() {
                       <td className="hidden sm:table-cell px-2 sm:px-6 py-2 sm:py-3">
                         <span
                           className={`inline-block px-2 sm:px-3 py-1 rounded-full text-xs font-medium ${
-                            transaction.type?.toLowerCase() === 'income'
+                            transaction.type === 'income' || transaction.type === 'Income'
                               ? 'bg-green-100 text-green-800'
-                              : 'bg-green-100 text-green-800'
+                              : 'bg-red-100 text-red-800'
                           }`}
                         >
                           {transaction.type}
@@ -230,12 +230,12 @@ export default function TransactionsPage() {
                       </td>
                       <td
                         className={`px-2 sm:px-6 py-2 sm:py-3 font-semibold text-right whitespace-nowrap ${
-                          transaction.type?.toLowerCase() === 'income'
+                          transaction.type === 'income' || transaction.type === 'Income'
                             ? 'text-green-600'
-                            : 'text-green-600'
+                            : 'text-red-600'
                         }`}
                       >
-                        {transaction.type?.toLowerCase() === 'income' ? '+' : '-'}₹{transaction.amount.toLocaleString()}
+                        {transaction.type === 'income' || transaction.type === 'Income' ? '+' : '-'}₹{transaction.amount.toLocaleString()}
                       </td>
                       <td className="px-2 sm:px-6 py-2 sm:py-3 text-center space-x-1 sm:space-x-2">
                         <Link href={`/dashboard/transactions/${transaction._id}`}>
