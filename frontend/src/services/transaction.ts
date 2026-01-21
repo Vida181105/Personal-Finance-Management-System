@@ -139,19 +139,6 @@ export const transactionService = {
     }
   },
 
-  updateTransaction: async (id: string, data: Partial<Transaction>): Promise<Transaction> => {
-    try {
-      const userId = await waitForAuth();
-      if (!userId) {
-        return Promise.reject(new Error('User not authenticated'));
-      }
-      const response = await api.put(`/transactions/${userId}/${id}`, data);
-      return response.data;
-    } catch (err) {
-      throw err;
-    }
-  },
-
   deleteTransaction: async (id: string): Promise<void> => {
     try {
       const userId = await waitForAuth();
@@ -239,5 +226,25 @@ export const transactionService = {
         monthly: {},
       };
     }
+  },
+
+  getTransaction: async (transactionId: string): Promise<Transaction> => {
+    const userId = await waitForAuth();
+    if (!userId) {
+      throw new Error('User not authenticated');
+    }
+
+    const response = await api.get(`/transactions/${userId}/${transactionId}`);
+    return response.data.data;
+  },
+
+  updateTransaction: async (transactionId: string, data: Partial<Transaction>): Promise<Transaction> => {
+    const userId = await waitForAuth();
+    if (!userId) {
+      throw new Error('User not authenticated');
+    }
+
+    const response = await api.put(`/transactions/${userId}/${transactionId}`, data);
+    return response.data.data;
   },
 };
