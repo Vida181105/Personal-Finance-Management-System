@@ -81,11 +81,11 @@ function ErrorCard({ message }: { message: string }) {
     <div className="flex flex-col items-center justify-center h-64 gap-2 text-center px-4">
       <div className="text-4xl">{isOffline ? '🔌' : '⚠️'}</div>
       <p className="text-gray-700 font-medium">
-        {isOffline ? 'ML service is offline' : 'Analysis failed'}
+        {isOffline ? 'ML service unavailable' : 'Analysis failed'}
       </p>
       <p className="text-sm text-gray-500 max-w-sm">
         {isOffline
-          ? 'Start the ML microservice with: cd ml-service && uvicorn main:app --port 8000'
+          ? 'The ML analytics service is currently unavailable. Please try again later.'
           : message}
       </p>
     </div>
@@ -480,11 +480,7 @@ export default function MLAnalyticsPage() {
         <div className="p-6">{renderContent(activeTab)}</div>
       </div>
 
-      {/* ML service note */}
-      <p className="text-xs text-gray-400 text-center">
-        Requires ML microservice running on port 8000 &nbsp;·&nbsp;
-        <code className="bg-gray-100 px-1 rounded">cd ml-service && uvicorn main:app --reload --port 8000</code>
-      </p>
+
     </div>
   );
 }
