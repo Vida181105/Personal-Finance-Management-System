@@ -3,7 +3,18 @@ const Transaction = require('../models/Transaction');
 const AIInsights = require('../models/AIInsights');
 const ResponseHandler = require('../utils/responseHandler');
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+// Lazily initialize Groq so missing API key doesn't crash the server on startup
+let groq = null;
+function getGroqClient() {
+  if (!groq) {
+    if (!process.env.GROQ_API_KEY) {
+      throw new Error('GROQ_API_KEY environment variable is not set');
+    }
+    groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  }
+  return groq;
+}
+
 const MODEL = 'llama-3.3-70b-versatile';
 
 /**
@@ -12,7 +23,7 @@ const MODEL = 'llama-3.3-70b-versatile';
 async function callGroqWithRetry(messages, maxRetries = 2) {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      const completion = await groq.chat.completions.create({
+      const completion = await getGroqClient().chat.completions.create({
         model: MODEL,
         messages,
         temperature: 0.7,
