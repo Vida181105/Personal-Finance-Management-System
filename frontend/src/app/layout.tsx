@@ -3,6 +3,7 @@ import { AuthProvider } from '@/context/AuthContext';
 import { SidebarProvider } from '@/context/SidebarContext';
 import { Sidebar } from '@/components/Sidebar';
 import { MainContent } from '@/components/MainContent';
+import { ChatWidget } from '@/components/ChatWidget';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -20,6 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Sidebar />
               <MainContent>{children}</MainContent>
             </div>
+            <ChatWidget />
           </SidebarProvider>
         </AuthProvider>
       </body>

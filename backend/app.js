@@ -49,6 +49,9 @@ app.use('/api/analytics', require('./src/routes/analyticsRoutes'));
 app.use('/api/transactions', require('./src/routes/transactionRoutes'));
 app.use('/api/categories', require('./src/routes/categoryRoutes'));
 app.use('/api/import', require('./src/routes/importRoutes'));
+app.use('/api/ai', require('./src/routes/aiRoutes'));
+app.use('/api/ml', require('./src/routes/mlRoutes'));
+app.use('/api/budget', require('./src/routes/budgetRoutes'));
 // Import additional routes here as needed
 // app.use('/api/users', require('./src/routes/userRoutes'));
 // app.use('/api/recurring', require('./src/routes/recurringRoutes'));

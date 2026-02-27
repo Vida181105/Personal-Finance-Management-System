@@ -128,6 +128,63 @@ class TransactionController {
         paymentMode: paymentMode || 'Cash',
       });
 
+      // Call ML service to categorize and score transaction (non-blocking)
+      try {
+        // Try to auto-categorize if description is provided
+        if (description) {
+          const categorizerResponse = await fetch(`${process.env.ML_SERVICE_URL || 'http://localhost:8000'}/categorize`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              description,
+              amount,
+              merchantName: merchantName || 'Other',
+              type,
+            }),
+          });
+
+          if (categorizerResponse.ok) {
+            const categorizeData = await categorizerResponse.json();
+            // Store suggested category (don't override if user explicitly set it)
+            transaction.suggested_category = categorizeData.predicted_category;
+            transaction.category_confidence = categorizeData.confidence;
+            console.log(`✅ ML categorized as: ${categorizeData.predicted_category} (${(categorizeData.confidence * 100).toFixed(0)}%)`);
+          }
+        }
+        
+        // Score transaction for anomalies
+        const historicalTxs = await Transaction.find({ userId }).select('date amount type category merchantName').lean().limit(100);
+        
+        if (historicalTxs.length >= 5) {
+          const mlResponse = await fetch(`${process.env.ML_SERVICE_URL || 'http://localhost:8000'}/score-transaction`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId,
+              new_transaction: {
+                date: transaction.date.toISOString(),
+                amount: transaction.amount,
+                type: transaction.type,
+                category: transaction.category,
+                merchantName: transaction.merchantName,
+              },
+              historical_transactions: historicalTxs,
+            }),
+          });
+
+          if (mlResponse.ok) {
+            const scoreData = await mlResponse.json();
+            transaction.anomaly_score = scoreData.anomaly_score || 0;
+            transaction.is_anomaly = scoreData.is_anomaly || false;
+            transaction.anomaly_reason = scoreData.reason || '';
+            console.log(`✅ ML scoring: ${scoreData.risk_level} (${(scoreData.anomaly_score * 100).toFixed(0)}%)`);
+          }
+        }
+      } catch (mlError) {
+        console.warn('⚠️ ML service failed (non-blocking):', mlError.message);
+        // Continue without ML enhancements
+      }
+
       await transaction.save();
 
       return ResponseHandler.success(res, 201, 'Transaction created', transaction);
@@ -298,6 +355,133 @@ class TransactionController {
         monthly,
       });
     } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Enrich transactions with ML data (categorization + anomaly scoring)
+   * POST /api/transactions/:userId/enrich
+   */
+  static async enrichTransactions(req, res, next) {
+    try {
+      const { userId } = req.params;
+      const { transactionIds = [] } = req.body;
+
+      if (req.user._id.toString() !== userId && req.user.userId !== userId && req.user.role !== 'admin') {
+        return ResponseHandler.forbidden(res, 'Unauthorized');
+      }
+
+      const query = { userId };
+      if (transactionIds.length > 0) {
+        query._id = { $in: transactionIds };
+      }
+
+      const transactions = await Transaction.find(query);
+      const mlServiceUrl = process.env.ML_SERVICE_URL || 'http://localhost:8000';
+      let enrichedCount = 0;
+      let skippedCount = 0;
+
+      console.log(`🔄 Starting enrichment for ${transactions.length} transactions...`);
+
+      for (const transaction of transactions) {
+        try {
+          let needsSave = false;
+
+          // Categorize if not already done
+          if (!transaction.suggested_category && transaction.description) {
+            try {
+              console.log(`📝 Categorizing: ${transaction.description}`);
+              const categorizerResponse = await fetch(`${mlServiceUrl}/categorize`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  description: transaction.description,
+                  amount: transaction.amount,
+                  merchantName: transaction.merchantName || 'Other',
+                  type: transaction.type,
+                }),
+              });
+
+              if (categorizerResponse.ok) {
+                const categorizeData = await categorizerResponse.json();
+                transaction.suggested_category = categorizeData.predicted_category;
+                transaction.category_confidence = categorizeData.confidence || 0.5;
+                needsSave = true;
+                console.log(`✅ Categorized as: ${categorizeData.predicted_category} (${(categorizeData.confidence * 100).toFixed(0)}%)`);
+              } else {
+                console.warn(`⚠️ Categorizer returned ${categorizerResponse.status}`);
+              }
+            } catch (err) {
+              console.warn(`⚠️ Categorization failed for ${transaction._id}:`, err.message);
+            }
+          }
+
+          // Score for anomalies if not already done (check for default 0 with no reason = not yet scored)
+          if (!transaction.anomaly_reason) {
+            try {
+              const historicalTxs = await Transaction.find({ userId })
+                .select('date amount type category merchantName')
+                .lean()
+                .limit(100);
+
+              if (historicalTxs.length >= 5) {
+                console.log(`⚠️ Scoring anomaly with ${historicalTxs.length} historical transactions`);
+                const scoreResponse = await fetch(`${mlServiceUrl}/score-transaction`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    userId,
+                    new_transaction: {
+                      date: transaction.date.toISOString(),
+                      amount: transaction.amount,
+                      type: transaction.type,
+                      category: transaction.category,
+                      merchantName: transaction.merchantName,
+                    },
+                    historical_transactions: historicalTxs,
+                  }),
+                });
+
+                if (scoreResponse.ok) {
+                  const scoreData = await scoreResponse.json();
+                  transaction.anomaly_score = scoreData.anomaly_score || 0;
+                  transaction.is_anomaly = scoreData.is_anomaly || false;
+                  transaction.anomaly_reason = scoreData.reason || '';
+                  needsSave = true;
+                  console.log(`✅ Anomaly scored: ${(transaction.anomaly_score * 100).toFixed(0)}% (is_anomaly: ${transaction.is_anomaly})`);
+                } else {
+                  console.warn(`⚠️ Scorer returned ${scoreResponse.status}`);
+                }
+              } else {
+                console.log(`⏭️ Skipping anomaly scoring: only ${historicalTxs.length} historical transactions (need >= 5)`);
+              }
+            } catch (err) {
+              console.warn(`⚠️ Anomaly scoring failed for ${transaction._id}:`, err.message);
+            }
+          } else {
+            skippedCount++;
+          }
+
+          // Save only if we made changes
+          if (needsSave) {
+            await transaction.save();
+            enrichedCount++;
+            console.log(`💾 Saved transaction ${transaction._id}`);
+          }
+        } catch (txError) {
+          console.warn(`⚠️ Failed to process transaction ${transaction._id}:`, txError.message);
+        }
+      }
+
+      console.log(`✅ Enrichment complete: ${enrichedCount} enriched, ${skippedCount} already enriched`);
+      return ResponseHandler.success(res, 200, `Enriched ${enrichedCount} transactions`, {
+        enrichedCount,
+        skippedCount,
+        totalCount: transactions.length,
+      });
+    } catch (error) {
+      console.error('❌ Enrichment error:', error.message);
       next(error);
     }
   }

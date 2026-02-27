@@ -92,6 +92,29 @@ export function Sidebar() {
         >
           Import CSV
         </Link>
+        
+        {/* AI Section */}
+        <div className="pt-4 border-t border-gray-700">
+          <p className="text-xs text-gray-500 uppercase font-semibold px-4 mb-2">AI & Insights</p>
+          <Link
+            href="/ai-assistant"
+            className="block px-4 py-2 rounded-lg hover:bg-gray-800 transition"
+          >
+            AI Assistant
+          </Link>
+          <Link
+            href="/dashboard/ml-analytics"
+            className="block px-4 py-2 rounded-lg hover:bg-gray-800 transition"
+          >
+            ML Analytics
+          </Link>
+          <Link
+            href="/dashboard/budget-optimizer"
+            className="block px-4 py-2 rounded-lg hover:bg-gray-800 transition"
+          >
+            Budget Optimizer
+          </Link>
+        </div>
       </nav>
 
       {/* Logout */}

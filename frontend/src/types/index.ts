@@ -22,6 +22,11 @@ export interface Transaction {
   type: 'income' | 'expense';
   merchantName?: string;
   paymentMode?: string;
+  anomaly_score?: number;
+  is_anomaly?: boolean;
+  anomaly_reason?: string;
+  suggested_category?: string;
+  category_confidence?: number;
   createdAt: string;
   updatedAt: string;
 }

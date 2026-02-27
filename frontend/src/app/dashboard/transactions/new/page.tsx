@@ -1,17 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Input } from '@/components/Input';
 import { Button } from '@/components/Button';
 import { transactionService } from '@/services/transaction';
-import { categoryService } from '@/services/category';
+import { aiService } from '@/services/ai';
 import { Transaction } from '@/types';
 
 // Category options based on transaction type
 const expenseCategories = [
-  'Food',
+  'Food & Dining',
   'Transportation',
   'Entertainment',
   'Shopping',
@@ -21,7 +21,7 @@ const expenseCategories = [
   'Travel',
   'Office',
   'Home',
-  'PersonalCare',
+  'Personal Care',
   'Insurance',
   'Subscriptions',
   'Donations',
@@ -46,8 +46,13 @@ export default function NewTransactionPage() {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [merchant, setMerchant] = useState('');
   const [suggestedCategory, setSuggestedCategory] = useState('');
+  const [suggestion, setSuggestion] = useState<{ category: string; confidence: number; reason: string } | null>(null);
+  const [suggestingCategory, setSuggestingCategory] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  // Debouncing refs for AI calls
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Get appropriate categories based on type
   const categories = type === 'income' ? incomeCategories : expenseCategories;
@@ -55,19 +60,74 @@ export default function NewTransactionPage() {
   const handleTypeChange = (newType: 'income' | 'expense') => {
     setType(newType);
     setCategory(''); // Reset category when type changes
-    setSuggestedCategory(''); // Reset suggested category
+    setSuggestion(null); // Reset suggestion
   };
 
-  const handleMerchantChange = async (value: string) => {
+  const handleMerchantChange = (value: string) => {
     setMerchant(value);
     
-    if (value.length > 2 && type === 'expense') {
-      try {
-        const suggestion = await categoryService.suggestCategory(value);
-        setSuggestedCategory(suggestion.category);
-      } catch (err) {
-        setSuggestedCategory('');
-      }
+    // Clear previous timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    // Only suggest for expenses with amount > 0
+    if (value.length > 2 && type === 'expense' && amount && parseFloat(amount) > 0) {
+      setSuggestingCategory(true);
+      
+      // Debounce the API call (400ms)
+      debounceTimerRef.current = setTimeout(async () => {
+        try {
+          const result = await aiService.checkCategory(value, parseFloat(amount));
+          setSuggestion({
+            category: result.category,
+            confidence: result.confidence,
+            reason: result.reason,
+          });
+        } catch (err) {
+          console.error('Failed to get AI suggestion:', err);
+          setSuggestion(null);
+        } finally {
+          setSuggestingCategory(false);
+        }
+      }, 400);
+    } else if (value.length <= 2) {
+      setSuggestion(null);
+      setSuggestingCategory(false);
+    }
+  };
+
+  const handleAmountChange = (value: string) => {
+    setAmount(value);
+    
+    // Clear previous timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    // Re-suggest when amount changes (if merchant is set)
+    if (merchant.length > 2 && type === 'expense' && value && parseFloat(value) > 0) {
+      setSuggestingCategory(true);
+      
+      // Debounce the API call (400ms)
+      debounceTimerRef.current = setTimeout(async () => {
+        try {
+          const result = await aiService.checkCategory(merchant, parseFloat(value));
+          setSuggestion({
+            category: result.category,
+            confidence: result.confidence,
+            reason: result.reason,
+          });
+        } catch (err) {
+          console.error('Failed to get AI suggestion:', err);
+          setSuggestion(null);
+        } finally {
+          setSuggestingCategory(false);
+        }
+      }, 400);
+    } else {
+      setSuggestion(null);
+      setSuggestingCategory(false);
     }
   };
 
@@ -170,7 +230,7 @@ export default function NewTransactionPage() {
             step="0.01"
             min="0"
             value={amount}
-            onChange={(e) => setAmount(e.target.value)}
+            onChange={(e) => handleAmountChange(e.target.value)}
             required
             disabled={loading}
           />
@@ -195,17 +255,42 @@ export default function NewTransactionPage() {
             />
           )}
 
-          {suggestedCategory && (
-            <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+          {suggestingCategory && (
+            <div className="bg-blue-50 border border-blue-200 p-3 rounded-lg">
               <p className="text-sm text-blue-700">
-                Suggested category: <strong>{suggestedCategory}</strong>
+                <span className="inline-block animate-spin mr-2">⚙️</span>
+                Analyzing transaction with AI...
               </p>
+            </div>
+          )}
+
+          {suggestion && !suggestingCategory && (
+            <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <p className="text-sm font-medium text-blue-900">
+                    🤖 AI Suggestion
+                  </p>
+                  <p className="text-sm text-blue-700 mt-1">
+                    <strong>{suggestion.category}</strong>
+                  </p>
+                  <p className="text-xs text-blue-600 mt-1">
+                    {suggestion.reason}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-bold text-blue-600">
+                    {(suggestion.confidence * 100).toFixed(0)}%
+                  </p>
+                  <p className="text-xs text-blue-600">confidence</p>
+                </div>
+              </div>
               <button
                 type="button"
-                onClick={() => setCategory(suggestedCategory)}
-                className="mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                onClick={() => setCategory(suggestion.category)}
+                className="w-full mt-2 text-sm bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded font-medium transition-colors"
               >
-                Use suggested category
+                Use AI Suggestion
               </button>
             </div>
           )}

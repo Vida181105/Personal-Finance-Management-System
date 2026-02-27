@@ -229,13 +229,18 @@ export const transactionService = {
   },
 
   getTransaction: async (transactionId: string): Promise<Transaction> => {
-    const userId = await waitForAuth();
-    if (!userId) {
-      throw new Error('User not authenticated');
-    }
+    try {
+      const userId = await waitForAuth();
+      if (!userId) {
+        throw new Error('User not authenticated');
+      }
 
-    const response = await api.get(`/transactions/${userId}/${transactionId}`);
-    return response.data.data;
+      const response = await api.get(`/transactions/${userId}/${transactionId}`);
+      return response.data.data || response.data;
+    } catch (err) {
+      console.error('Error fetching transaction:', err);
+      throw err;
+    }
   },
 
   updateTransaction: async (transactionId: string, data: Partial<Transaction>): Promise<Transaction> => {

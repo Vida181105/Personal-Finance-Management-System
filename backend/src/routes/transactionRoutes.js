@@ -49,4 +49,10 @@ router.put('/:userId/:transactionId', asyncHandler(TransactionController.updateT
  */
 router.delete('/:userId/:transactionId', asyncHandler(TransactionController.deleteTransaction));
 
+/**
+ * POST /api/transactions/:userId/enrich
+ * Enrich transactions with ML data (categorization + anomaly scoring)
+ */
+router.post('/:userId/enrich', asyncHandler(TransactionController.enrichTransactions));
+
 module.exports = router;

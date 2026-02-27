@@ -10,7 +10,7 @@ import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 
 export default function TransactionsPage() {
-  const { isLoading: authLoading, isAuthenticated } = useAuth();
+  const { isLoading: authLoading, isAuthenticated, user } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -19,6 +19,7 @@ export default function TransactionsPage() {
   const [categoryFilter, setCategoryFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState<'income' | 'expense' | ''>('');
   const [total, setTotal] = useState(0);
+  const [enriching, setEnriching] = useState(false);
 
   const fetchTransactions = async () => {
     try {
@@ -55,6 +56,44 @@ export default function TransactionsPage() {
   useEffect(() => {
     setPage(1);
   }, [searchTerm, categoryFilter, typeFilter]);
+
+  // Enrich transactions with ML data on first load
+  useEffect(() => {
+    const enrichTransactions = async () => {
+      if (!user?.userId || enriching) return;
+      
+      try {
+        setEnriching(true);
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8888/api';
+        console.log(`🔄 Enriching transactions for user ${user.userId}...`);
+        const response = await fetch(`${apiUrl}/transactions/${user.userId}/enrich`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+          },
+          body: JSON.stringify({}),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log(`✅ Enrichment complete:`, data);
+          // Refresh transactions to show updated data
+          fetchTransactions();
+        } else {
+          console.warn(`⚠️ Enrichment failed: ${response.status}`, await response.text());
+        }
+      } catch (err) {
+        console.warn('⚠️ Enrichment request failed:', err);
+      } finally {
+        setEnriching(false);
+      }
+    };
+
+    if (!authLoading && isAuthenticated && user?.userId) {
+      enrichTransactions();
+    }
+  }, [authLoading, isAuthenticated, user?._id]);
 
   useEffect(() => {
     // Only fetch after auth is loaded AND user is authenticated
@@ -186,11 +225,11 @@ export default function TransactionsPage() {
                     <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-900">
                       Date
                     </th>
-                    <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-900">
-                      Description
-                    </th>
                     <th className="hidden sm:table-cell px-2 sm:px-6 py-2 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-900">
                       Category
+                    </th>
+                    <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-900">
+                      AI Category Check
                     </th>
                     <th className="hidden sm:table-cell px-2 sm:px-6 py-2 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-900">
                       Type
@@ -199,23 +238,45 @@ export default function TransactionsPage() {
                       Amount
                     </th>
                     <th className="px-2 sm:px-6 py-2 sm:py-3 text-center text-xs sm:text-sm font-medium text-gray-900">
-                      Actions
+                      Risk
+                    </th>
+                    <th className="px-2 sm:px-6 py-2 sm:py-3 text-center text-xs sm:text-sm font-medium text-gray-900">
+                      Delete
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {transactions.map((transaction) => (
-                    <tr key={transaction._id} className="border-b hover:bg-gray-50 text-xs sm:text-sm">
+                    <tr key={transaction._id} className={`border-b hover:bg-gray-50 text-xs sm:text-sm ${
+                      transaction.is_anomaly ? 'bg-red-50' : ''
+                    }`}>
                       <td className="px-2 sm:px-6 py-2 sm:py-3 text-gray-600">
                         {new Date(transaction.date).toLocaleDateString()}
-                      </td>
-                      <td className="px-2 sm:px-6 py-2 sm:py-3 text-gray-900 truncate max-w-xs sm:max-w-none">
-                        {transaction.description}
                       </td>
                       <td className="hidden sm:table-cell px-2 sm:px-6 py-2 sm:py-3">
                         <span className="inline-block px-2 sm:px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
                           {transaction.category}
                         </span>
+                      </td>
+                      <td className="px-2 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm">
+                        {transaction.suggested_category ? (
+                          transaction.suggested_category.toLowerCase() === transaction.category?.toLowerCase() ? (
+                            <span className="text-green-600 font-medium">✓ Confirmed</span>
+                          ) : (
+                            <div className="flex flex-col gap-0.5">
+                              <span className="inline-block px-2 py-1 bg-orange-100 text-orange-800 rounded-full font-medium">
+                                ⚡ {transaction.suggested_category}
+                              </span>
+                              {transaction.category_confidence !== undefined && (
+                                <span className="text-gray-500 text-xs pl-1">
+                                  {(transaction.category_confidence * 100).toFixed(0)}% confident
+                                </span>
+                              )}
+                            </div>
+                          )
+                        ) : (
+                          <span className="text-gray-400 text-xs">—</span>
+                        )}
                       </td>
                       <td className="hidden sm:table-cell px-2 sm:px-6 py-2 sm:py-3">
                         <span
@@ -237,12 +298,24 @@ export default function TransactionsPage() {
                       >
                         {transaction.type?.toLowerCase() === 'income' ? '+' : '-'}₹{transaction.amount.toLocaleString()}
                       </td>
-                      <td className="px-2 sm:px-6 py-2 sm:py-3 text-center space-x-1 sm:space-x-2">
-                        <Link href={`/dashboard/transactions/${transaction._id}`}>
-                          <Button variant="secondary" size="sm">
-                            Edit
-                          </Button>
-                        </Link>
+                      <td className="px-2 sm:px-6 py-2 sm:py-3 text-center" title={transaction.anomaly_reason}>
+                        {transaction.type?.toLowerCase() !== 'expense' ? (
+                          <span className="text-gray-400 text-xs">—</span>
+                        ) : transaction.anomaly_score !== undefined && transaction.anomaly_score !== null ? (
+                          <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
+                            transaction.anomaly_score > 0.6
+                              ? 'bg-red-100 text-red-700'
+                              : transaction.anomaly_score > 0.3
+                              ? 'bg-yellow-100 text-yellow-700'
+                              : 'bg-green-100 text-green-700'
+                          }`}>
+                            {transaction.anomaly_score > 0.6 ? '⚠️' : transaction.anomaly_score > 0.3 ? '⚡' : '✓'} {(transaction.anomaly_score * 100).toFixed(0)}%
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 text-xs">—</span>
+                        )}
+                      </td>
+                      <td className="px-2 sm:px-6 py-2 sm:py-3 text-center">
                         <Button
                           variant="danger"
                           size="sm"

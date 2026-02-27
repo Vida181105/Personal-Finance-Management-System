@@ -51,6 +51,27 @@ const transactionSchema = new mongoose.Schema(
     source: {
       type: String,
     },
+    anomaly_score: {
+      type: Number,
+      min: 0,
+      max: 1,
+      default: 0,
+    },
+    is_anomaly: {
+      type: Boolean,
+      default: false,
+    },
+    anomaly_reason: {
+      type: String,
+    },
+    suggested_category: {
+      type: String,
+    },
+    category_confidence: {
+      type: Number,
+      min: 0,
+      max: 1,
+    },
   },
   {
     timestamps: true,

@@ -183,6 +183,24 @@ export default function DashboardPage() {
             </div>
           </div>
         )}
+
+        {/* AI Insights Link */}
+        <div className="mt-12 border-t pt-8">
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg shadow-md p-8 border border-blue-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">🤖 AI Financial Insights</h2>
+                <p className="text-gray-600 mb-4">Ask AI questions about your spending, get personalized insights, and discover ways to improve your finances.</p>
+              </div>
+              <a
+                href="/ai-assistant"
+                className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors whitespace-nowrap ml-4"
+              >
+                Go to AI Assistant →
+              </a>
+            </div>
+          </div>
+        </div>
       </div>
     </ProtectedRoute>
   );
