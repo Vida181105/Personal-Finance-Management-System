@@ -45,7 +45,6 @@ export default function NewTransactionPage() {
   const [type, setType] = useState<'income' | 'expense'>('expense');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [merchant, setMerchant] = useState('');
-  const [suggestedCategory, setSuggestedCategory] = useState('');
   const [suggestion, setSuggestion] = useState<{ category: string; confidence: number; reason: string } | null>(null);
   const [suggestingCategory, setSuggestingCategory] = useState(false);
   const [loading, setLoading] = useState(false);
