@@ -318,19 +318,6 @@ User registers/logs in
   → Middleware verifies JWT on protected routes
 ```
 
----
-
-## Features Not Yet Implemented (Future)
-- [ ] Recurring transactions
-- [ ] Budget alerts/notifications  
-- [ ] Multi-currency support
-- [ ] Bank account linking (Plaid integration)
-- [ ] Investment tracking
-- [ ] Tax report generation
-- [ ] Expense splitting
-
----
-
 ## Troubleshooting
 
 ### Backend won't start (GROQ_API_KEY error)
@@ -357,33 +344,6 @@ The enrichment endpoint (`POST /api/transactions/:userId/enrich`) requires the f
 ### Goals disappear after page reload
 Make sure localStorage isn't disabled in browser. Goals are stored in `localStorage` key `budget_optimizer_goals`. Check DevTools → Application → Local Storage.
 
----
-
-## Development Workflow
-
-### Making Changes
-```bash
-# Make code changes locally
-git add .
-git commit -m "Feature: Add budget alerts"
-git push origin main
-
-# Vercel auto-deploys frontend in 30 seconds
-# Render auto-deploys backend/ML if those changed
-# Check deployment status in Vercel/Render dashboards
-```
-
-### Running Tests
-```bash
-# Backend (manual API testing)
-cd backend/tests
-bash testAuthEndpoints.sh
-
-# Frontend (manual browser testing)
-npm run build  # Check for TypeScript errors
-```
-
----
 
 ## Contributing
 
