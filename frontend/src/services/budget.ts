@@ -3,6 +3,7 @@ import api from './api';
 export interface SavingsGoal {
   name: string;
   target_amount: number;
+  current_amount?: number;
   priority: number;
   deadline_months: number;
 }

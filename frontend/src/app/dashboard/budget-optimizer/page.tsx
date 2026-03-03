@@ -22,7 +22,7 @@ export default function BudgetOptimizerPage() {
       return [];
     }
   });
-  const [newGoal, setNewGoal] = useState({ name: '', target_amount: '', priority: 3, deadline_months: 6 });
+  const [newGoal, setNewGoal] = useState({ name: '', target_amount: '', current_amount: '', priority: 3, deadline_months: 6 });
   const [optimizationPlan, setOptimizationPlan] = useState<BudgetOptimizationPlan | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -44,11 +44,12 @@ export default function BudgetOptimizerPage() {
     const goal: SavingsGoal = {
       name: newGoal.name.trim(),
       target_amount: parseFloat(newGoal.target_amount as string),
+      current_amount: newGoal.current_amount ? parseFloat(newGoal.current_amount as string) : 0,
       priority: newGoal.priority,
       deadline_months: newGoal.deadline_months,
     };
     setGoals([...goals, goal]);
-    setNewGoal({ name: '', target_amount: '', priority: 3, deadline_months: 6 });
+    setNewGoal({ name: '', target_amount: '', current_amount: '', priority: 3, deadline_months: 6 });
     setError('');
   };
 
@@ -126,6 +127,16 @@ export default function BudgetOptimizerPage() {
                 </div>
 
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Already Saved (₹) <span className="text-gray-400 font-normal">(optional)</span></label>
+                  <Input
+                    type="number"
+                    placeholder="e.g., 25000"
+                    value={newGoal.current_amount}
+                    onChange={(e) => setNewGoal({ ...newGoal, current_amount: e.target.value })}
+                  />
+                </div>
+
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
                   <select
                     value={newGoal.priority}
@@ -180,8 +191,12 @@ export default function BudgetOptimizerPage() {
                     >
                       <div>
                         <p className="font-semibold text-gray-900">{goal.name}</p>
-                        <p className="text-sm text-gray-500">
-                          Target: ₹{goal.target_amount.toLocaleString()} &nbsp;|&nbsp;
+                      <p className="text-sm text-gray-500">
+                          Target: ₹{goal.target_amount.toLocaleString()}
+                          {goal.current_amount && goal.current_amount > 0 ? (
+                            <> &nbsp;|&nbsp; Saved: ₹{goal.current_amount.toLocaleString()} &nbsp;|&nbsp; Remaining: ₹{(goal.target_amount - goal.current_amount).toLocaleString()}</>
+                          ) : null}
+                          &nbsp;|&nbsp;
                           Deadline: {goal.deadline_months} month{goal.deadline_months !== 1 ? 's' : ''} &nbsp;|&nbsp;
                           Priority: {priorityLabel(goal.priority)}
                         </p>
@@ -222,7 +237,7 @@ export default function BudgetOptimizerPage() {
                     <p className="text-2xl font-bold text-indigo-900">₹{optimizationPlan.total_income.toLocaleString()}</p>
                   </div>
                   <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-                    <p className="text-sm text-green-600 font-medium">Total Allocated</p>
+                    <p className="text-sm text-green-600 font-medium">Allocated to Expenses</p>
                     <p className="text-2xl font-bold text-green-900">₹{optimizationPlan.total_allocated.toLocaleString()}</p>
                   </div>
                   <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">

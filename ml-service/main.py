@@ -103,6 +103,7 @@ class CategorizerResponse(BaseModel):
 class SavingsGoal(BaseModel):
     name: str
     target_amount: float
+    current_amount: float = 0  # Already saved toward this goal
     priority: int  # 1-5, higher is more important
     deadline_months: int
 
@@ -580,107 +581,146 @@ async def categorize_transaction(request: CategorizerRequest) -> CategorizerResp
 @app.post("/optimize-budget")
 async def optimize_budget(request: BudgetOptimizerRequest) -> BudgetOptimizerResponse:
     """
-    Optimize budget allocation across categories and savings goals
-    Uses linear programming to maximize goal achievement
+    Optimize budget allocation across categories and savings goals.
+    - Each goal gets exactly the monthly amount it needs: (target - current) / months
+    - Expense categories are never reduced below 50% of their 3-month average
+    - Any surplus after expenses + goal contributions becomes "Free Savings"
     """
     try:
         logger.info(f"💰 Optimizing budget for user {request.userId}")
-        
+
         if request.monthly_income <= 0:
             raise HTTPException(status_code=400, detail="Monthly income must be positive")
-        
-        # Extract expense categories
+
         expense_categories = request.expense_categories or {}
         total_current_expenses = sum(expense_categories.values())
-        
-        # Define essential vs discretionary categories
+
+        # ── Step 1: Enforce 50% floor on every expense category ──────────────
+        # If we ever need to trim spending (overspend scenario), no category
+        # can go below 50% of its 3-month average.
         essential = {"Utilities", "Rent", "Healthcare", "Insurance", "Groceries", "Transportation"}
-        essential_expenses = sum(v for k, v in expense_categories.items() if k in essential)
-        discretionary_expenses = total_current_expenses - essential_expenses
-        
-        # Calculate allocation
-        available_for_goals = request.monthly_income - total_current_expenses
-        
-        if available_for_goals < 0:
-            # Overspending - return minimal allocation
-            logger.warn(f"User is overspending: income={request.monthly_income}, expenses={total_current_expenses}")
-            summary = f"⚠️ Current expenses (₹{total_current_expenses:.0f}) exceed income (₹{request.monthly_income:.0f}). Reduce spending first."
-            return BudgetOptimizerResponse(
-                userId=request.userId,
-                allocation_plan=[
-                    BudgetAllocation(category=cat, allocated_amount=amt, percentage=(amt / request.monthly_income * 100))
-                    for cat, amt in expense_categories.items()
-                ],
-                total_income=request.monthly_income,
-                total_allocated=total_current_expenses,
-                total_savings_potential=0,
-                goal_achievement_probability={},
-                summary=summary
+        floors = {cat: amt * 0.5 for cat, amt in expense_categories.items()}
+
+        available_after_current_expenses = request.monthly_income - total_current_expenses
+
+        if available_after_current_expenses >= 0:
+            # Not overspending — keep each category at its full 3-month average
+            expense_allocation = dict(expense_categories)
+            surplus = available_after_current_expenses
+        else:
+            # Overspending — trim discretionary categories down toward their floors
+            deficit = -available_after_current_expenses
+            discretionary_headroom = sum(
+                max(0.0, expense_categories[cat] - floors[cat])
+                for cat in expense_categories
+                if cat not in essential
             )
-        
-        # Sort goals by priority
+
+            expense_allocation = {}
+            if discretionary_headroom > 0:
+                trim_ratio = min(1.0, deficit / discretionary_headroom)
+                for cat, amt in expense_categories.items():
+                    if cat not in essential:
+                        headroom = max(0.0, amt - floors[cat])
+                        expense_allocation[cat] = round(amt - headroom * trim_ratio, 2)
+                    else:
+                        expense_allocation[cat] = amt
+            else:
+                # Nothing left to trim — clamp everything to the 50% floor
+                expense_allocation = {cat: floors[cat] for cat in expense_categories}
+
+            surplus = max(0.0, request.monthly_income - sum(expense_allocation.values()))
+
+        # ── Step 2: Calculate EXACT monthly need for each goal ────────────────
+        # monthly_needed = (target - already_saved) / months_remaining
         sorted_goals = sorted(request.savings_goals, key=lambda g: g.priority, reverse=True)
-        
-        # Allocate to goals proportional to priority
-        goal_allocations = {}
-        goal_probabilities = {}
-        
-        if sorted_goals:
-            total_priority = sum(g.priority for g in sorted_goals)
-            for goal in sorted_goals:
-                allocation = (goal.priority / total_priority) * available_for_goals
-                goal_allocations[goal.name] = allocation
-                
-                # Probability of achieving goal (based on allocation vs target)
-                months_until_deadline = max(1, goal.deadline_months)
-                monthly_needed = goal.target_amount / months_until_deadline
-                probability = min(0.99, allocation / monthly_needed if monthly_needed > 0 else 0.5)
-                goal_probabilities[goal.name] = float(probability)
-        
-        # Build allocation plan
+
+        goal_monthly_needed: dict[str, float] = {}
+        for goal in sorted_goals:
+            months = max(1, goal.deadline_months)
+            already_saved = min(getattr(goal, "current_amount", 0) or 0, goal.target_amount)
+            remaining = max(0.0, goal.target_amount - already_saved)
+            goal_monthly_needed[goal.name] = round(remaining / months, 2)
+
+        # ── Step 3: Allocate exact need to each goal (high priority first) ────
+        goal_allocations: dict[str, float] = {}
+        goal_probabilities: dict[str, float] = {}
+        remaining_surplus = surplus
+
+        for goal in sorted_goals:
+            needed = goal_monthly_needed[goal.name]
+            allocated = min(needed, remaining_surplus)
+            allocated = round(allocated, 2)
+            goal_allocations[goal.name] = allocated
+            remaining_surplus = round(remaining_surplus - allocated, 2)
+
+            # Probability: 1.0 if we can fully fund the need, proportional otherwise
+            if needed <= 0:
+                probability = 0.99
+            else:
+                probability = min(0.99, allocated / needed)
+            goal_probabilities[goal.name] = float(probability)
+
+        # ── Step 4: Any leftover surplus → Free Savings ───────────────────────
+        free_savings = max(0.0, remaining_surplus)
+
+        # ── Step 5: Build allocation plan ─────────────────────────────────────
+        total_expense_allocated = sum(expense_allocation.values())
         allocation_plan = [
             BudgetAllocation(
                 category=cat,
-                allocated_amount=amt,
-                percentage=(amt / request.monthly_income * 100)
+                allocated_amount=round(amt, 2),
+                percentage=round(amt / request.monthly_income * 100, 1),
             )
-            for cat, amt in expense_categories.items()
+            for cat, amt in expense_allocation.items()
         ]
-        
-        # Add savings allocations
+
         for goal_name, allocation in goal_allocations.items():
+            if allocation > 0:
+                allocation_plan.append(
+                    BudgetAllocation(
+                        category=f"Goal: {goal_name}",
+                        allocated_amount=allocation,
+                        percentage=round(allocation / request.monthly_income * 100, 1),
+                    )
+                )
+
+        if free_savings > 0:
             allocation_plan.append(
                 BudgetAllocation(
-                    category=f"Goal: {goal_name}",
-                    allocated_amount=allocation,
-                    percentage=(allocation / request.monthly_income * 100)
+                    category="Free Savings",
+                    allocated_amount=round(free_savings, 2),
+                    percentage=round(free_savings / request.monthly_income * 100, 1),
                 )
             )
-        
-        total_allocated = sum(a.allocated_amount for a in allocation_plan)
-        
-        # Summary
-        summary = f"Income: ₹{request.monthly_income:.0f} | "
-        summary += f"Current Expenses: ₹{total_current_expenses:.0f} | "
-        summary += f"Savings Potential: ₹{available_for_goals:.0f}. "
-        
-        if len(sorted_goals) > 0:
-            avg_probability = sum(goal_probabilities.values()) / len(goal_probabilities)
-            summary += f"Average goal achievement probability: {avg_probability*100:.0f}%"
-        else:
-            summary += "No savings goals defined."
-        
-        logger.info(f"✅ Budget optimized: {total_allocated:.0f} allocated from {request.monthly_income:.0f}")
+
+        # ── Step 6: Build summary ─────────────────────────────────────────────
+        total_goal_contributions = sum(goal_allocations.values())
+        summary = (
+            f"Income: ₹{request.monthly_income:.0f} | "
+            f"Expenses: ₹{total_expense_allocated:.0f} | "
+            f"Goal contributions: ₹{total_goal_contributions:.0f} | "
+            f"Free savings: ₹{free_savings:.0f}."
+        )
+        if goal_probabilities:
+            avg_prob = sum(goal_probabilities.values()) / len(goal_probabilities)
+            summary += f" Average goal achievement: {avg_prob * 100:.0f}%"
+
+        logger.info(
+            f"✅ Budget optimized: expenses={total_expense_allocated:.0f}, "
+            f"goals={total_goal_contributions:.0f}, free={free_savings:.0f}"
+        )
+
         return BudgetOptimizerResponse(
             userId=request.userId,
             allocation_plan=allocation_plan,
             total_income=request.monthly_income,
-            total_allocated=total_allocated,
-            total_savings_potential=available_for_goals,
+            total_allocated=round(total_expense_allocated, 2),
+            total_savings_potential=round(surplus, 2),
             goal_achievement_probability=goal_probabilities,
-            summary=summary
+            summary=summary,
         )
-    
+
     except Exception as e:
         logger.error(f"❌ Budget optimization error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
