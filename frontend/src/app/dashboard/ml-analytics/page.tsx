@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   PieChart,
   Pie,
@@ -354,6 +354,11 @@ function ForecastPanel({ data }: { data: ForecastResult }) {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function MLAnalyticsPage() {
+  const lastRunRef = useRef<Record<Tab, number>>({
+    clusters: 0,
+    anomalies: 0,
+    forecast: 0,
+  });
   const [activeTab, setActiveTab] = useState<Tab>('clusters');
 
   const [clusterData, setClusterData] = useState<SpendingClusters | null>(null);
@@ -371,6 +376,20 @@ export default function MLAnalyticsPage() {
   });
 
   async function runTab(tab: Tab) {
+    const now = Date.now();
+    const hasLocalData =
+      (tab === 'clusters' && Boolean(clusterData)) ||
+      (tab === 'anomalies' && Boolean(anomalyData)) ||
+      (tab === 'forecast' && Boolean(forecastData));
+
+    if (hasLocalData && now - lastRunRef.current[tab] < 60_000) {
+      setInfoMsg((p) => ({
+        ...p,
+        [tab]: 'Showing recent result from the last minute to avoid ML rate limiting.',
+      }));
+      return;
+    }
+
     setLoading((p) => ({ ...p, [tab]: true }));
     setErrors((p) => ({ ...p, [tab]: null }));
     setInfoMsg((p) => ({ ...p, [tab]: null }));
@@ -382,6 +401,7 @@ export default function MLAnalyticsPage() {
           setInfoMsg((p) => ({ ...p, clusters: (d as unknown as { message: string }).message }));
         } else {
           setClusterData(d);
+          lastRunRef.current.clusters = now;
         }
       } else if (tab === 'anomalies') {
         const d = await mlService.detectAnomalies();
@@ -389,6 +409,7 @@ export default function MLAnalyticsPage() {
           setInfoMsg((p) => ({ ...p, anomalies: (d as unknown as { message: string }).message }));
         } else {
           setAnomalyData(d);
+          lastRunRef.current.anomalies = now;
         }
       } else {
         const d = await mlService.forecastExpenses();
@@ -396,6 +417,7 @@ export default function MLAnalyticsPage() {
           setInfoMsg((p) => ({ ...p, forecast: (d as unknown as { message: string }).message }));
         } else {
           setForecastData(d);
+          lastRunRef.current.forecast = now;
         }
       }
     } catch (err: unknown) {

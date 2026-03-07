@@ -39,9 +39,15 @@ async function testAgents() {
         console.log('═'.repeat(60));
         if (result.prioritizedRecommendations && result.prioritizedRecommendations.length > 0) {
             result.prioritizedRecommendations.forEach((rec, idx) => {
-                console.log(`\n${idx + 1}. [${rec.sourceAgent}] ${rec.title}`);
-                console.log(`   Priority: ${rec.priority} | Severity: ${rec.severity}`);
-                console.log(`   Detail: ${rec.detail}`);
+                const source = rec?.sourceAgent || rec?.source || 'unknown';
+                const title = rec?.title || rec?.message || rec?.recommendation || 'Untitled recommendation';
+                const detail = rec?.detail || rec?.impact || rec?.description || 'No detail provided';
+                const priority = rec?.priority ?? 'n/a';
+                const severity = rec?.severity ?? 'n/a';
+
+                console.log(`\n${idx + 1}. [${source}] ${title}`);
+                console.log(`   Priority: ${priority} | Severity: ${severity}`);
+                console.log(`   Detail: ${detail}`);
             });
         } else {
             console.log('⚠️  No recommendations found - you may need transactions/goals in your account');
@@ -51,10 +57,15 @@ async function testAgents() {
         console.log('═'.repeat(60));
         if (result.alerts && result.alerts.length > 0) {
             result.alerts.forEach((alert, idx) => {
-                const emoji = alert.severity === 'critical' ? '🔴' : alert.severity === 'high' ? '🟠' : '🟡';
-                console.log(`\n${idx + 1}. ${emoji} [${alert.sourceAgent}] ${alert.title}`);
-                console.log(`   Severity: ${alert.severity}`);
-                console.log(`   Message: ${alert.message}`);
+                const severity = alert?.severity || 'low';
+                const emoji = severity === 'critical' ? '🔴' : severity === 'high' ? '🟠' : '🟡';
+                const source = alert?.sourceAgent || 'unknown';
+                const title = alert?.title || alert?.message || 'Untitled alert';
+                const message = alert?.message || alert?.description || 'No message provided';
+
+                console.log(`\n${idx + 1}. ${emoji} [${source}] ${title}`);
+                console.log(`   Severity: ${severity}`);
+                console.log(`   Message: ${message}`);
             });
         } else {
             console.log('✅ No alerts - your finances look good!');

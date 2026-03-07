@@ -1,8 +1,79 @@
 const axios = require('axios');
 const Transaction = require('../models/Transaction');
 const ResponseHandler = require('../utils/responseHandler');
+const redisClient = require('../config/redis');
 
 const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:8000';
+const ML_CACHE_TTL_SECONDS = Number(process.env.ML_CACHE_TTL_SECONDS || 180);
+const localMlCache = new Map();
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function buildCacheKey(userId, type, params = {}) {
+  return `ml:${type}:${userId}:${JSON.stringify(params)}`;
+}
+
+async function getCachedMlResult(cacheKey) {
+  if (redisClient.isReady()) {
+    try {
+      return await redisClient.get(cacheKey);
+    } catch (error) {
+      console.error('ML cache read error:', error.message);
+    }
+  }
+
+  const item = localMlCache.get(cacheKey);
+  if (!item) {
+    return null;
+  }
+  if (Date.now() > item.expiresAt) {
+    localMlCache.delete(cacheKey);
+    return null;
+  }
+  return item.data;
+}
+
+async function setCachedMlResult(cacheKey, data, ttlSeconds = ML_CACHE_TTL_SECONDS) {
+  if (redisClient.isReady()) {
+    try {
+      await redisClient.set(cacheKey, data, ttlSeconds);
+      return;
+    } catch (error) {
+      console.error('ML cache write error:', error.message);
+    }
+  }
+
+  localMlCache.set(cacheKey, {
+    data,
+    expiresAt: Date.now() + ttlSeconds * 1000,
+  });
+}
+
+async function postToMlWithRetry(path, payload, timeout = 10000, maxRetries = 1) {
+  let attempt = 0;
+
+  while (true) {
+    try {
+      return await axios.post(`${ML_SERVICE_URL}${path}`, payload, { timeout });
+    } catch (error) {
+      const status = error?.response?.status;
+      if (status !== 429 || attempt >= maxRetries) {
+        throw error;
+      }
+
+      const retryAfterHeader = error?.response?.headers?.['retry-after'];
+      const retryAfterSeconds = Number(retryAfterHeader);
+      const waitMs = Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
+        ? retryAfterSeconds * 1000
+        : 1500 * (attempt + 1);
+
+      attempt += 1;
+      await sleep(waitMs);
+    }
+  }
+}
 
 function handleMlServiceError(error, res, next) {
   const status = error?.response?.status;
@@ -53,6 +124,12 @@ class MLController {
     try {
       const { userId } = req.user;
       const { n_clusters = 5 } = req.body;
+      const cacheKey = buildCacheKey(userId, 'cluster', { n_clusters });
+
+      const cached = await getCachedMlResult(cacheKey);
+      if (cached) {
+        return ResponseHandler.success(res, 200, 'Clustering analysis complete (cached)', cached);
+      }
 
       // Fetch all available transactions for better clustering (up to 300)
       const transactions = await Transaction.find({ userId })
@@ -68,8 +145,8 @@ class MLController {
       }
 
       // Call ML service
-      const mlResponse = await axios.post(
-        `${ML_SERVICE_URL}/cluster`,
+      const mlResponse = await postToMlWithRetry(
+        '/cluster',
         {
           userId,
           transactions: transactions.map((t) => ({
@@ -81,8 +158,11 @@ class MLController {
           })),
           n_clusters,
         },
-        { timeout: 10000 } // 10 second timeout
+        10000,
+        1
       );
+
+      await setCachedMlResult(cacheKey, mlResponse.data);
 
       return ResponseHandler.success(res, 200, 'Clustering analysis complete', mlResponse.data);
     } catch (error) {
@@ -98,6 +178,12 @@ class MLController {
     try {
       const { userId } = req.user;
       const { contamination = 0.1 } = req.body;
+      const cacheKey = buildCacheKey(userId, 'anomalies', { contamination });
+
+      const cached = await getCachedMlResult(cacheKey);
+      if (cached) {
+        return ResponseHandler.success(res, 200, 'Anomaly detection complete (cached)', cached);
+      }
 
       // Fetch all available transactions for better anomaly detection (up to 200)
       const transactions = await Transaction.find({ userId })
@@ -113,8 +199,8 @@ class MLController {
       }
 
       // Call ML service
-      const mlResponse = await axios.post(
-        `${ML_SERVICE_URL}/anomalies`,
+      const mlResponse = await postToMlWithRetry(
+        '/anomalies',
         {
           userId,
           transactions: transactions.map((t) => ({
@@ -126,8 +212,11 @@ class MLController {
           })),
           contamination,
         },
-        { timeout: 10000 } // 10 second timeout
+        10000,
+        1
       );
+
+      await setCachedMlResult(cacheKey, mlResponse.data);
 
       return ResponseHandler.success(res, 200, 'Anomaly detection complete', mlResponse.data);
     } catch (error) {
@@ -143,6 +232,12 @@ class MLController {
     try {
       const { userId } = req.user;
       const { forecast_days = 30 } = req.body;
+      const cacheKey = buildCacheKey(userId, 'forecast', { forecast_days });
+
+      const cached = await getCachedMlResult(cacheKey);
+      if (cached) {
+        return ResponseHandler.success(res, 200, 'Expense forecast generated (cached)', cached);
+      }
 
       // Fetch user transactions
       const transactions = await Transaction.find({ userId })
@@ -158,8 +253,8 @@ class MLController {
       }
 
       // Call ML service
-      const mlResponse = await axios.post(
-        `${ML_SERVICE_URL}/forecast`,
+      const mlResponse = await postToMlWithRetry(
+        '/forecast',
         {
           userId,
           transactions: transactions
@@ -173,8 +268,11 @@ class MLController {
             })),
           forecast_days,
         },
-        { timeout: 10000 } // 10 second timeout
+        10000,
+        1
       );
+
+      await setCachedMlResult(cacheKey, mlResponse.data);
 
       return ResponseHandler.success(res, 200, 'Expense forecast generated', mlResponse.data);
     } catch (error) {
