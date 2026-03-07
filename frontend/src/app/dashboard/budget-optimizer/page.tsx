@@ -141,7 +141,7 @@ export default function BudgetOptimizerPage() {
                   <select
                     value={newGoal.priority}
                     onChange={(e) => setNewGoal({ ...newGoal, priority: parseInt(e.target.value) })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500"
                   >
                     {[5, 4, 3, 2, 1].map((p) => (
                       <option key={p} value={p}>{p} — {priorityLabel(p)}</option>
@@ -191,7 +191,7 @@ export default function BudgetOptimizerPage() {
                     >
                       <div>
                         <p className="font-semibold text-gray-900">{goal.name}</p>
-                      <p className="text-sm text-gray-500">
+                        <p className="text-sm text-gray-500">
                           Target: ₹{goal.target_amount.toLocaleString()}
                           {goal.current_amount && goal.current_amount > 0 ? (
                             <> &nbsp;|&nbsp; Saved: ₹{goal.current_amount.toLocaleString()} &nbsp;|&nbsp; Remaining: ₹{(goal.target_amount - goal.current_amount).toLocaleString()}</>

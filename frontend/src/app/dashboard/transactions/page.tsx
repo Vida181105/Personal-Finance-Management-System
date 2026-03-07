@@ -43,7 +43,7 @@ export default function TransactionsPage() {
         setLoading(false);
         return;
       }
-      
+
       console.error('Error fetching transactions:', err);
       const errorMessage = err.message || err.response?.data?.message || 'Failed to load transactions';
       setError(errorMessage);
@@ -61,7 +61,7 @@ export default function TransactionsPage() {
   useEffect(() => {
     const enrichTransactions = async () => {
       if (!user?.userId || enriching) return;
-      
+
       try {
         setEnriching(true);
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8888/api';
@@ -190,7 +190,7 @@ export default function TransactionsPage() {
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value as any)}
-              className="px-2 sm:px-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="px-2 sm:px-4 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500"
             >
               <option value="">All Types</option>
               <option value="income">Income</option>
@@ -247,9 +247,8 @@ export default function TransactionsPage() {
                 </thead>
                 <tbody>
                   {transactions.map((transaction) => (
-                    <tr key={transaction._id} className={`border-b hover:bg-gray-50 text-xs sm:text-sm ${
-                      transaction.is_anomaly ? 'bg-red-50' : ''
-                    }`}>
+                    <tr key={transaction._id} className={`border-b hover:bg-gray-50 text-xs sm:text-sm ${transaction.is_anomaly ? 'bg-red-50' : ''
+                      }`}>
                       <td className="px-2 sm:px-6 py-2 sm:py-3 text-gray-600">
                         {new Date(transaction.date).toLocaleDateString()}
                       </td>
@@ -280,21 +279,19 @@ export default function TransactionsPage() {
                       </td>
                       <td className="hidden sm:table-cell px-2 sm:px-6 py-2 sm:py-3">
                         <span
-                          className={`inline-block px-2 sm:px-3 py-1 rounded-full text-xs font-medium ${
-                            transaction.type?.toLowerCase() === 'income'
+                          className={`inline-block px-2 sm:px-3 py-1 rounded-full text-xs font-medium ${transaction.type?.toLowerCase() === 'income'
                               ? 'bg-green-100 text-green-800'
                               : 'bg-red-100 text-red-800'
-                          }`}
+                            }`}
                         >
                           {transaction.type}
                         </span>
                       </td>
                       <td
-                        className={`px-2 sm:px-6 py-2 sm:py-3 font-semibold text-right whitespace-nowrap ${
-                          transaction.type?.toLowerCase() === 'income'
+                        className={`px-2 sm:px-6 py-2 sm:py-3 font-semibold text-right whitespace-nowrap ${transaction.type?.toLowerCase() === 'income'
                             ? 'text-green-600'
                             : 'text-red-600'
-                        }`}
+                          }`}
                       >
                         {transaction.type?.toLowerCase() === 'income' ? '+' : '-'}₹{transaction.amount.toLocaleString()}
                       </td>
@@ -302,13 +299,12 @@ export default function TransactionsPage() {
                         {transaction.type?.toLowerCase() !== 'expense' ? (
                           <span className="text-gray-400 text-xs">—</span>
                         ) : transaction.anomaly_score !== undefined && transaction.anomaly_score !== null ? (
-                          <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
-                            transaction.anomaly_score > 0.6
+                          <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${transaction.anomaly_score > 0.6
                               ? 'bg-red-100 text-red-700'
                               : transaction.anomaly_score > 0.3
-                              ? 'bg-yellow-100 text-yellow-700'
-                              : 'bg-green-100 text-green-700'
-                          }`}>
+                                ? 'bg-yellow-100 text-yellow-700'
+                                : 'bg-green-100 text-green-700'
+                            }`}>
                             {transaction.anomaly_score > 0.6 ? '⚠️' : transaction.anomaly_score > 0.3 ? '⚡' : '✓'} {(transaction.anomaly_score * 100).toFixed(0)}%
                           </span>
                         ) : (

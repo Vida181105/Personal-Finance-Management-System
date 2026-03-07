@@ -49,7 +49,7 @@ export default function NewTransactionPage() {
   const [suggestingCategory, setSuggestingCategory] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  
+
   // Debouncing refs for AI calls
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -64,7 +64,7 @@ export default function NewTransactionPage() {
 
   const handleMerchantChange = (value: string) => {
     setMerchant(value);
-    
+
     // Clear previous timer
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
@@ -73,7 +73,7 @@ export default function NewTransactionPage() {
     // Only suggest for expenses with amount > 0
     if (value.length > 2 && type === 'expense' && amount && parseFloat(amount) > 0) {
       setSuggestingCategory(true);
-      
+
       // Debounce the API call (400ms)
       debounceTimerRef.current = setTimeout(async () => {
         try {
@@ -98,7 +98,7 @@ export default function NewTransactionPage() {
 
   const handleAmountChange = (value: string) => {
     setAmount(value);
-    
+
     // Clear previous timer
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
@@ -107,7 +107,7 @@ export default function NewTransactionPage() {
     // Re-suggest when amount changes (if merchant is set)
     if (merchant.length > 2 && type === 'expense' && value && parseFloat(value) > 0) {
       setSuggestingCategory(true);
-      
+
       // Debounce the API call (400ms)
       debounceTimerRef.current = setTimeout(async () => {
         try {
@@ -148,7 +148,7 @@ export default function NewTransactionPage() {
         type,
         date: date,
       };
-      
+
       if (merchant) {
         newTransaction.merchantName = merchant;
       }
@@ -188,11 +188,10 @@ export default function NewTransactionPage() {
               <button
                 type="button"
                 onClick={() => handleTypeChange('expense')}
-                className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
-                  type === 'expense'
+                className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${type === 'expense'
                     ? 'bg-red-500 text-white'
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
+                  }`}
                 disabled={loading}
               >
                 Expense
@@ -200,11 +199,10 @@ export default function NewTransactionPage() {
               <button
                 type="button"
                 onClick={() => handleTypeChange('income')}
-                className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
-                  type === 'income'
+                className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${type === 'income'
                     ? 'bg-green-500 text-white'
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
+                  }`}
                 disabled={loading}
               >
                 Income
@@ -301,7 +299,7 @@ export default function NewTransactionPage() {
               onChange={(e) => setCategory(e.target.value)}
               disabled={loading}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">Select a category</option>
               {categories.map((cat) => (
