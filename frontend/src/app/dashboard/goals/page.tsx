@@ -140,7 +140,6 @@ export default function GoalsPage() {
                             key={goal._id}
                             goal={goal}
                             onUpdateProgress={handleUpdateProgress}
-                            onRefresh={loadData}
                         />
                     ))
                 )}
@@ -187,8 +186,7 @@ const StatCard: React.FC<{ title: string; value: string | number; icon: string; 
 const GoalCard: React.FC<{
     goal: Goal;
     onUpdateProgress: (id: string, amount: number) => void;
-    onRefresh: () => void;
-}> = ({ goal, onUpdateProgress, onRefresh }) => {
+}> = ({ goal, onUpdateProgress }) => {
     const [showAddProgress, setShowAddProgress] = useState(false);
     const [amount, setAmount] = useState('');
 
@@ -252,8 +250,8 @@ const GoalCard: React.FC<{
                     <div
                         key={milestone.percentage}
                         className={`flex-1 text-center p-2 rounded ${milestone.achieved
-                                ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300'
-                                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                            ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
                             }`}
                     >
                         <div className="text-xs font-medium">{milestone.percentage}%</div>
