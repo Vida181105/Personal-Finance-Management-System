@@ -4,6 +4,42 @@ const ResponseHandler = require('../utils/responseHandler');
 
 const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:8000';
 
+function handleMlServiceError(error, res, next) {
+  const status = error?.response?.status;
+
+  if (status === 429) {
+    return ResponseHandler.error(
+      res,
+      429,
+      'ML analytics is rate-limited right now. Please wait about a minute and try again.',
+      null,
+      'ML_RATE_LIMIT'
+    );
+  }
+
+  if (error.code === 'ECONNABORTED') {
+    return ResponseHandler.error(
+      res,
+      504,
+      'ML analytics request timed out. Please try again.',
+      null,
+      'ML_TIMEOUT'
+    );
+  }
+
+  if (error.code === 'ECONNREFUSED' || status === 502 || status === 503 || status === 504) {
+    return ResponseHandler.error(
+      res,
+      503,
+      'ML service temporarily unavailable. Please try again later.',
+      null,
+      'ML_SERVICE_UNAVAILABLE'
+    );
+  }
+
+  return next(error);
+}
+
 /**
  * ML Service Integration Controller
  * Bridges backend routes to Python ML microservice
@@ -50,18 +86,7 @@ class MLController {
 
       return ResponseHandler.success(res, 200, 'Clustering analysis complete', mlResponse.data);
     } catch (error) {
-      // Fallback if ML service is down
-      if (error.code === 'ECONNREFUSED') {
-        return ResponseHandler.error(
-          res,
-          503,
-          'ML service temporarily unavailable. Please try again later.',
-          null,
-          'ML_SERVICE_UNAVAILABLE'
-        );
-      }
-
-      next(error);
+      return handleMlServiceError(error, res, next);
     }
   }
 
@@ -106,17 +131,7 @@ class MLController {
 
       return ResponseHandler.success(res, 200, 'Anomaly detection complete', mlResponse.data);
     } catch (error) {
-      if (error.code === 'ECONNREFUSED') {
-        return ResponseHandler.error(
-          res,
-          503,
-          'ML service temporarily unavailable. Please try again later.',
-          null,
-          'ML_SERVICE_UNAVAILABLE'
-        );
-      }
-
-      next(error);
+      return handleMlServiceError(error, res, next);
     }
   }
 
@@ -163,17 +178,7 @@ class MLController {
 
       return ResponseHandler.success(res, 200, 'Expense forecast generated', mlResponse.data);
     } catch (error) {
-      if (error.code === 'ECONNREFUSED') {
-        return ResponseHandler.error(
-          res,
-          503,
-          'ML service temporarily unavailable. Please try again later.',
-          null,
-          'ML_SERVICE_UNAVAILABLE'
-        );
-      }
-
-      next(error);
+      return handleMlServiceError(error, res, next);
     }
   }
 

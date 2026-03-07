@@ -30,7 +30,7 @@ const PIE_COLORS = [
 const TREND_BADGES: Record<string, { label: string; color: string }> = {
   increasing: { label: 'Spending Increasing', color: 'bg-red-100 text-red-700' },
   decreasing: { label: 'Spending Decreasing', color: 'bg-green-100 text-green-700' },
-  stable:     { label: 'Spending Stable',     color: 'bg-blue-100 text-blue-700'  },
+  stable: { label: 'Spending Stable', color: 'bg-blue-100 text-blue-700' },
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -399,6 +399,15 @@ export default function MLAnalyticsPage() {
         }
       }
     } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 429) {
+        setErrors((p) => ({
+          ...p,
+          [tab]: 'ML analytics is rate-limited right now. Please wait about a minute and try again.',
+        }));
+        return;
+      }
+
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
         (err as Error).message ||
@@ -410,19 +419,19 @@ export default function MLAnalyticsPage() {
   }
 
   const tabs: { id: Tab; label: string; desc: string }[] = [
-    { id: 'clusters',  label: 'Spending Clusters', desc: 'KMeans pattern grouping'   },
-    { id: 'anomalies', label: 'Anomaly Detection',  desc: 'Isolation Forest outliers'  },
-    { id: 'forecast',  label: 'Expense Forecast',   desc: 'Time-series prediction'     },
+    { id: 'clusters', label: 'Spending Clusters', desc: 'KMeans pattern grouping' },
+    { id: 'anomalies', label: 'Anomaly Detection', desc: 'Isolation Forest outliers' },
+    { id: 'forecast', label: 'Expense Forecast', desc: 'Time-series prediction' },
   ];
 
   function renderContent(tab: Tab) {
-    if (loading[tab])  return <LoadingCard />;
-    if (errors[tab])   return <ErrorCard message={errors[tab]!} />;
-    if (infoMsg[tab])  return <InfoCard message={infoMsg[tab]!} />;
+    if (loading[tab]) return <LoadingCard />;
+    if (errors[tab]) return <ErrorCard message={errors[tab]!} />;
+    if (infoMsg[tab]) return <InfoCard message={infoMsg[tab]!} />;
 
-    if (tab === 'clusters'  && clusterData)  return <ClustersPanel  data={clusterData}  />;
-    if (tab === 'anomalies' && anomalyData)  return <AnomaliesPanel data={anomalyData}  />;
-    if (tab === 'forecast'  && forecastData) return <ForecastPanel  data={forecastData} />;
+    if (tab === 'clusters' && clusterData) return <ClustersPanel data={clusterData} />;
+    if (tab === 'anomalies' && anomalyData) return <AnomaliesPanel data={anomalyData} />;
+    if (tab === 'forecast' && forecastData) return <ForecastPanel data={forecastData} />;
 
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-4">
@@ -464,11 +473,10 @@ export default function MLAnalyticsPage() {
             <button
               key={t.id}
               onClick={() => setActiveTab(t.id)}
-              className={`flex-1 px-4 py-3 text-sm font-medium transition text-left sm:text-center ${
-                activeTab === t.id
+              className={`flex-1 px-4 py-3 text-sm font-medium transition text-left sm:text-center ${activeTab === t.id
                   ? 'border-b-2 border-indigo-600 text-indigo-700 bg-indigo-50'
                   : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-              }`}
+                }`}
             >
               <span className="block">{t.label}</span>
               <span className="block text-xs font-normal text-gray-400 hidden sm:block">{t.desc}</span>
