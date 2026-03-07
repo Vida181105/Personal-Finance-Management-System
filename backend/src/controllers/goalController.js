@@ -1,5 +1,11 @@
 const Goal = require('../models/Goal');
-const { successResponse, errorResponse } = require('../utils/responseHandler');
+const ResponseHandler = require('../utils/responseHandler');
+
+const successResponse = (res, message, data = null, statusCode = 200) =>
+    ResponseHandler.success(res, statusCode, message, data);
+
+const errorResponse = (res, message, statusCode = 500, error = null, code = null) =>
+    ResponseHandler.error(res, statusCode, message, error, code);
 
 /**
  * Get all goals for authenticated user
