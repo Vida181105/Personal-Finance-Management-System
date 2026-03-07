@@ -68,11 +68,11 @@ export default function GoalsPage() {
         return (
             <div className="p-6 max-w-7xl mx-auto">
                 <div className="animate-pulse space-y-4">
-                    <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
+                    <div className="h-8 bg-gray-200 rounded w-1/3"></div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                        <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                        <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                        <div className="h-32 bg-gray-200 rounded"></div>
+                        <div className="h-32 bg-gray-200 rounded"></div>
+                        <div className="h-32 bg-gray-200 rounded"></div>
                     </div>
                 </div>
             </div>
@@ -84,8 +84,8 @@ export default function GoalsPage() {
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Financial Goals</h1>
-                    <p className="text-gray-600 dark:text-gray-400 mt-1">Track your savings and debt payoff progress</p>
+                    <h1 className="text-3xl font-bold text-gray-900">Financial Goals</h1>
+                    <p className="text-gray-600 mt-1">Track your savings and debt payoff progress</p>
                 </div>
                 <button
                     onClick={() => setShowCreateModal(true)}
@@ -125,8 +125,8 @@ export default function GoalsPage() {
             {/* Goals List */}
             <div className="space-y-4">
                 {goals.length === 0 ? (
-                    <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                        <p className="text-gray-500 dark:text-gray-400 mb-4">No active goals yet</p>
+                    <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
+                        <p className="text-gray-500 mb-4">No active goals yet</p>
                         <button
                             onClick={() => setShowCreateModal(true)}
                             className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium"
@@ -163,17 +163,17 @@ const StatCard: React.FC<{ title: string; value: string | number; icon: string; 
     color
 }) => {
     const colorClasses = {
-        blue: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400',
-        green: 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400',
-        purple: 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400',
+        blue: 'bg-blue-50 text-blue-600',
+        green: 'bg-green-50 text-green-600',
+        purple: 'bg-purple-50 text-purple-600',
     };
 
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
             <div className="flex items-center justify-between">
                 <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{title}</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{value}</p>
+                    <p className="text-sm text-gray-600">{title}</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
                 </div>
                 <div className={`text-3xl ${colorClasses[color as keyof typeof colorClasses]}`}>
                     {icon}
@@ -201,30 +201,30 @@ const GoalCard: React.FC<{
     };
 
     const typeColors = {
-        savings: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
-        debt_payoff: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
-        investment: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
+        savings: 'bg-green-100 text-green-700',
+        debt_payoff: 'bg-red-100 text-red-700',
+        investment: 'bg-purple-100 text-purple-700',
     };
 
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
             <div className="flex justify-between items-start mb-4">
                 <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white">{goal.name}</h3>
+                        <h3 className="text-xl font-bold text-gray-900">{goal.name}</h3>
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${typeColors[goal.type]}`}>
                             {goal.type.replace('_', ' ')}
                         </span>
                     </div>
                     {goal.description && (
-                        <p className="text-gray-600 dark:text-gray-400 text-sm">{goal.description}</p>
+                        <p className="text-gray-600 text-sm">{goal.description}</p>
                     )}
                 </div>
                 <div className="text-right">
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                    <p className="text-2xl font-bold text-gray-900">
                         {goal.progressPercentage.toFixed(0)}%
                     </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                    <p className="text-sm text-gray-500">
                         {goal.daysRemaining > 0 ? `${goal.daysRemaining} days left` : 'Overdue'}
                     </p>
                 </div>
@@ -232,11 +232,11 @@ const GoalCard: React.FC<{
 
             {/* Progress Bar */}
             <div className="mb-4">
-                <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
+                <div className="flex justify-between text-sm text-gray-600 mb-2">
                     <span>₹{goal.currentAmount.toLocaleString()}</span>
                     <span>₹{goal.targetAmount.toLocaleString()}</span>
                 </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                <div className="w-full bg-gray-200 rounded-full h-3">
                     <div
                         className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-500"
                         style={{ width: `${Math.min(100, goal.progressPercentage)}%` }}
@@ -250,8 +250,8 @@ const GoalCard: React.FC<{
                     <div
                         key={milestone.percentage}
                         className={`flex-1 text-center p-2 rounded ${milestone.achieved
-                            ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300'
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-gray-100 text-gray-600'
                             }`}
                     >
                         <div className="text-xs font-medium">{milestone.percentage}%</div>
@@ -298,9 +298,9 @@ const GoalCard: React.FC<{
             </div>
 
             {/* Monthly Target */}
-            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                    💡 Monthly target: <span className="font-medium text-gray-900 dark:text-white">₹{goal.monthlyTarget.toLocaleString()}</span> to reach goal on time
+            <div className="mt-4 pt-4 border-t border-gray-200">
+                <p className="text-sm text-gray-600">
+                    💡 Monthly target: <span className="font-medium text-gray-900">₹{goal.monthlyTarget.toLocaleString()}</span> to reach goal on time
                 </p>
             </div>
         </div>

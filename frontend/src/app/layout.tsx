@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="bg-gray-50 dark:bg-gray-900 overflow-hidden transition-colors">
+      <body className="bg-gray-50 overflow-hidden transition-colors">
         <ErrorBoundary>
           <ThemeProvider>
             <ToastProvider>
