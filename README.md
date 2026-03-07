@@ -6,6 +6,15 @@ A comprehensive web application for managing personal finances with transaction 
 
 ---
 
+## 📚 Documentation
+
+- **[Frontend README](./frontend/README.md)** - Next.js React app architecture, setup, and components
+- **[Backend README](./backend/README.md)** - Express.js API, authentication, and core services
+- **[ML Service README](./ml-service/README.md)** - Python FastAPI microservice with ML models
+- **[Multi-Agent System README](./backend/src/services/agents/README.md)** - Agent orchestration and architecture
+
+---
+
 ## Features Implemented
 
 ### 💳 Transaction Management

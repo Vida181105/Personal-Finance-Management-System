@@ -52,13 +52,15 @@ app.use('/api/import', require('./src/routes/importRoutes'));
 app.use('/api/ai', require('./src/routes/aiRoutes'));
 app.use('/api/ml', require('./src/routes/mlRoutes'));
 app.use('/api/budget', require('./src/routes/budgetRoutes'));
+app.use('/api/agents', require('./src/routes/agentRoutes'));
+app.use('/api/goals', require('./src/routes/goalRoutes'));
 // Import additional routes here as needed
 // app.use('/api/users', require('./src/routes/userRoutes'));
 // app.use('/api/recurring', require('./src/routes/recurringRoutes'));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.status(200).json({ 
+  res.status(200).json({
     message: 'Server is running',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development'
@@ -77,7 +79,7 @@ app.get('/', (req, res) => {
 
 // 404 handler
 app.use((req, res) => {
-  res.status(404).json({ 
+  res.status(404).json({
     success: false,
     message: 'Route not found',
     code: 'NOT_FOUND'

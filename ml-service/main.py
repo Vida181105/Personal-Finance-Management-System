@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 import logging
 from scipy.optimize import linprog
 import warnings
+from model_manager import model_manager
 
 warnings.filterwarnings('ignore')
 
@@ -24,6 +25,10 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Finance ML Service", version="1.0")
+
+# ============= Global Model Cache =============
+_categorizer_model = None
+_model_load_attempted = False
 
 # ============= Data Models =============
 
@@ -128,6 +133,45 @@ class BudgetOptimizerResponse(BaseModel):
     goal_achievement_probability: dict  # {goal_name: probability}
     summary: str
 
+class ModelPerformanceResponse(BaseModel):
+    """Model performance metrics response"""
+    model: str
+    version: str
+    accuracy: Optional[float] = None
+    precision: Optional[float] = None
+    recall: Optional[float] = None
+    f1_score: Optional[float] = None
+    saved_at: Optional[str] = None
+    training_samples: Optional[int] = None
+    cv_mean: Optional[float] = None
+    cv_std: Optional[float] = None
+
+class ModelVersionResponse(BaseModel):
+    """Available model versions"""
+    model: str
+    versions: List[str]
+    latest: str
+
+# ============= Startup & Shutdown =============
+
+@app.on_event("startup")
+async def startup_event():
+    """Load models at application startup"""
+    global _categorizer_model, _model_load_attempted
+    
+    try:
+        logger.info("🚀 Loading pre-trained models...")
+        _categorizer_model = model_manager.load_model("transaction_categorizer")
+        _model_load_attempted = True
+        logger.info("✅ All models loaded successfully")
+    except FileNotFoundError:
+        logger.warning("⚠️ Trained models not found. Categorizer will use rule-based fallback. "
+                      "Run `python train_categorizer.py` to train models.")
+        _model_load_attempted = True
+    except Exception as e:
+        logger.error(f"❌ Error loading models: {str(e)}")
+        _model_load_attempted = True
+
 # ============= Endpoints =============
 
 @app.get("/health")
@@ -136,7 +180,7 @@ def health_check():
     return {
         "status": "ok",
         "service": "ml-service",
-        "endpoints": ["/cluster", "/anomalies", "/forecast", "/categorize", "/optimize-budget"],
+        "endpoints": ["/cluster", "/anomalies", "/forecast", "/categorize", "/optimize-budget", "/models/performance", "/models/versions"],
         "version": "1.0"
     }
 
@@ -508,75 +552,140 @@ async def score_single_transaction(request: TransactionScoringRequest) -> Transa
 async def categorize_transaction(request: CategorizerRequest) -> CategorizerResponse:
     """
     Predict transaction category using Random Forest classifier trained on transaction patterns
-    Features: TF-IDF of description, amount, merchant patterns
+    Features: TF-IDF of description + merchant, log(amount), transaction type
+    
+    Falls back to rule-based approach if model is not trained
     """
     try:
         logger.info(f"📝 Categorizing transaction: {request.description[:50]}...")
         
-        # For now, implement a rules + heuristics approach; can be extended with trained model
-        description = request.description.lower()
-        merchant = request.merchantName.lower()
-        amount = request.amount
+        # Try to use trained model
+        if _categorizer_model:
+            try:
+                return _categorize_with_model(request)
+            except Exception as e:
+                logger.warning(f"⚠️ Model prediction failed: {str(e)}. Falling back to rules.")
         
-        # Category keywords mapping
-        category_keywords = {
-            "Food & Dining": ["restaurant", "food", "café", "pizza", "burger", "dinner", "lunch", "breakfast", "dine"],
-            "Groceries": ["grocery", "supermarket", "market", "walmart", "costco", "trader", "whole foods", "publix"],
-            "Shopping": ["amazon", "shop", "retail", "mall", "store", "buy", "purchase", "ebay", "target"],
-            "Transportation": ["uber", "taxi", "gas", "fuel", "petrol", "parking", "toll", "transit", "car", "metro"],
-            "Utilities": ["electric", "water", "internet", "phone", "bill", "gas company", "utility"],
-            "Entertainment": ["cinema", "movie", "concert", "theater", "game", "netflix", "spotify", "gaming"],
-            "Healthcare": ["hospital", "doctor", "pharmacy", "medical", "health", "clinic", "dental"],
-            "Education": ["school", "university", "course", "education", "tuition", "udemy", "coursera", "books"],
-            "Insurance": ["insurance", "premium", "policy"],
-            "Travel": ["flight", "hotel", "airbnb", "booking", "travel", "airline", "resort"],
-            "Salary": ["salary", "wage", "income", "paycheck", "employer"],
-            "Rent": ["rent", "landlord", "tenancy", "housing"],
-        }
-        
-        # Score categories based on keyword matches
-        scores = {}
-        for category, keywords in category_keywords.items():
-            score = sum(1 for kw in keywords if kw in description or kw in merchant)
-            scores[category] = score
-        
-        # Special logic for amount-based categorization
-        if request.type == "Income":
-            if amount > 5000:
-                scores["Salary"] = max(scores.get("Salary", 0), 5)
-        else:
-            if amount < 500:
-                scores["Food & Dining"] = max(scores.get("Food & Dining", 0), 2)
-                scores["Groceries"] = max(scores.get("Groceries", 0), 2)
-        
-        # Get top 3 categories
-        sorted_categories = sorted(scores.items(), key=lambda x: x[1], reverse=True)
-        
-        if sorted_categories[0][1] == 0:
-            # No match, use default
-            predicted_category = "Other"
-            confidence = 0.3
-        else:
-            predicted_category = sorted_categories[0][0]
-            # Confidence based on score difference
-            max_score = sorted_categories[0][1] + 1
-            confidence = min(0.99, max(0.5, max_score / 10))
-        
-        alternatives = [(cat, min(0.99, (cnt + 1) / 10)) for cat, cnt in sorted_categories[1:4]]
-        
-        explanation = f"Matched keywords in description and merchant. Amount ₹{amount:.0f} is typical for {predicted_category}."
-        
-        logger.info(f"✅ Categorized as {predicted_category} ({confidence*100:.0f}% confidence)")
-        return CategorizerResponse(
-            predicted_category=predicted_category,
-            confidence=float(confidence),
-            alternative_categories=alternatives,
-            explanation=explanation
-        )
+        # Fallback: Rule-based categorization
+        return _categorize_with_rules(request)
     
     except Exception as e:
         logger.error(f"❌ Categorization error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+def _categorize_with_model(request: CategorizerRequest) -> CategorizerResponse:
+    """Use trained Random Forest model for categorization"""
+    global _categorizer_model
+    
+    model_bundle = _categorizer_model
+    classifier = model_bundle['classifier']
+    tfidf_vectorizer = model_bundle['tfidf_vectorizer']
+    categories = model_bundle['categories']
+    
+    # Prepare features
+    text = f"{request.merchantName} {request.description}".lower()
+    amount = np.log1p(request.amount)
+    type_feature = 1.0 if request.type == "Income" else 0.0
+    
+    # TF-IDF vectorization
+    tfidf_features = tfidf_vectorizer.transform([text]).toarray()[0]
+    
+    # Combine features
+    X = np.hstack([tfidf_features, [amount, type_feature]])
+    
+    # Predict
+    prediction = classifier.predict([X])[0]
+    probabilities = classifier.predict_proba([X])[0]
+    
+    # Get confidence and alternatives
+    confidence = float(np.max(probabilities))
+    
+    # Sort by probability
+    sorted_indices = np.argsort(probabilities)[::-1]
+    alternatives = [
+        (categories[i], float(probabilities[i]))
+        for i in sorted_indices[1:4]
+        if probabilities[i] > 0.1
+    ]
+    
+    explanation = f"Random Forest prediction ({confidence*100:.0f}% confidence). "
+    explanation += f"Features: TF-IDF({request.merchantName}/{request.description}), "
+    explanation += f"Amount: ₹{request.amount:.0f}, Type: {request.type}"
+    
+    logger.info(f"✅ RF Categorized as {prediction} ({confidence*100:.0f}% confidence)")
+    
+    return CategorizerResponse(
+        predicted_category=prediction,
+        confidence=confidence,
+        alternative_categories=alternatives,
+        explanation=explanation
+    )
+
+
+def _categorize_with_rules(request: CategorizerRequest) -> CategorizerResponse:
+    """Fallback rule-based categorization"""
+    description = request.description.lower()
+    merchant = request.merchantName.lower()
+    amount = request.amount
+    
+    # Category keywords mapping
+    category_keywords = {
+        "Food & Dining": ["restaurant", "food", "café", "pizza", "burger", "dinner", "lunch", "breakfast", "dine", "cafe"],
+        "Groceries": ["grocery", "supermarket", "market", "walmart", "costco", "trader", "whole foods", "publix"],
+        "Shopping": ["amazon", "shop", "retail", "mall", "store", "buy", "purchase", "ebay", "target"],
+        "Transportation": ["uber", "taxi", "gas", "fuel", "petrol", "parking", "toll", "transit", "car", "metro", "ola"],
+        "Utilities": ["electric", "water", "internet", "phone", "bill", "gas company", "utility", "jio"],
+        "Entertainment": ["cinema", "movie", "concert", "theater", "game", "netflix", "spotify", "gaming", "bookmyshow"],
+        "Healthcare": ["hospital", "doctor", "pharmacy", "medical", "health", "clinic", "dental"],
+        "Education": ["school", "university", "course", "education", "tuition", "udemy", "coursera", "books"],
+        "Insurance": ["insurance", "premium", "policy"],
+        "Travel": ["flight", "hotel", "airbnb", "booking", "travel", "airline", "resort"],
+        "Salary": ["salary", "wage", "income", "paycheck", "employer"],
+        "Rent": ["rent", "landlord", "tenancy", "housing"],
+    }
+    
+    # Score categories based on keyword matches
+    scores = {}
+    for category, keywords in category_keywords.items():
+        score = sum(1 for kw in keywords if kw in description or kw in merchant)
+        scores[category] = score
+    
+    # Special logic for amount-based categorization
+    if request.type == "Income":
+        if amount > 5000:
+            scores["Salary"] = max(scores.get("Salary", 0), 5)
+    else:
+        if amount < 500:
+            scores["Food & Dining"] = max(scores.get("Food & Dining", 0), 2)
+            scores["Groceries"] = max(scores.get("Groceries", 0), 2)
+    
+    # Get top 3 categories
+    sorted_categories = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+    
+    if sorted_categories[0][1] == 0:
+        # No match, use default
+        predicted_category = "Other"
+        confidence = 0.3
+    else:
+        predicted_category = sorted_categories[0][0]
+        # Confidence based on score difference
+        max_score = sorted_categories[0][1] + 1
+        confidence = min(0.99, max(0.5, max_score / 10))
+    
+    alternatives = [(cat, min(0.99, (cnt + 1) / 10)) for cat, cnt in sorted_categories[1:4]]
+    
+    explanation = f"Rule-based categorization (model not available). Matched keywords in description and merchant. "
+    explanation += f"Amount ₹{amount:.0f} typical for {predicted_category}."
+    
+    logger.info(f"✅ Rules-based: Categorized as {predicted_category} ({confidence*100:.0f}% confidence)")
+    
+    return CategorizerResponse(
+        predicted_category=predicted_category,
+        confidence=float(confidence),
+        alternative_categories=alternatives,
+        explanation=explanation
+    )
 
 @app.post("/optimize-budget")
 async def optimize_budget(request: BudgetOptimizerRequest) -> BudgetOptimizerResponse:
@@ -723,6 +832,121 @@ async def optimize_budget(request: BudgetOptimizerRequest) -> BudgetOptimizerRes
 
     except Exception as e:
         logger.error(f"❌ Budget optimization error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============= Model Monitoring Endpoints =============
+
+@app.get("/models/performance/{model_name}")
+async def get_model_performance(model_name: str) -> ModelPerformanceResponse:
+    """Get performance metrics for a specific model"""
+    try:
+        logger.info(f"📊 Fetching performance metrics for {model_name}")
+        
+        perf = model_manager.get_model_performance(model_name)
+        
+        if not perf or not perf.get("version"):
+            raise HTTPException(status_code=404, detail=f"Model {model_name} not found")
+        
+        return ModelPerformanceResponse(**perf)
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Failed to fetch performance: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/models/versions/{model_name}")
+async def get_model_versions(model_name: str) -> ModelVersionResponse:
+    """Get all available versions of a model"""
+    try:
+        logger.info(f"📦 Listing versions for {model_name}")
+        
+        versions = model_manager.list_versions(model_name)
+        
+        if not versions:
+            raise HTTPException(status_code=404, detail=f"No versions found for {model_name}")
+        
+        # Get latest version
+        meta = model_manager.get_model_metadata(model_name)
+        latest = meta.get("version_id", versions[0]) if meta else versions[0]
+        
+        return ModelVersionResponse(
+            model=model_name,
+            versions=versions,
+            latest=latest
+        )
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Failed to list versions: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/models/train")
+async def trigger_model_training(model_name: str = "transaction_categorizer") -> Dict[str, str]:
+    """
+    Trigger training of a specific model
+    Currently supports: transaction_categorizer
+    """
+    try:
+        if model_name != "transaction_categorizer":
+            raise HTTPException(status_code=400, detail="Only 'transaction_categorizer' model training is supported via API. "
+                                                       "Use train_categorizer.py for full training.")
+        
+        logger.info(f"🚀 Training triggered for {model_name}. This may take a moment...")
+        
+        # Import is here to avoid issues at startup
+        from train_categorizer import TransactionCategorizerTrainer
+        
+        trainer = TransactionCategorizerTrainer()
+        transactions = trainer.load_sample_data()
+        X, y = trainer.prepare_training_data(transactions)
+        metrics = trainer.train(X, y)
+        version_id = trainer.save_model()
+        
+        # Reload the model in memory
+        global _categorizer_model
+        _categorizer_model = model_manager.load_model("transaction_categorizer")
+        
+        logger.info(f"✅ Training complete: {version_id}")
+        
+        return {
+            "status": "success",
+            "message": f"Model {model_name} trained successfully",
+            "version": version_id,
+            "accuracy": f"{metrics['accuracy']:.1%}",
+            "f1_score": f"{metrics['f1_score']:.1%}"
+        }
+    
+    except Exception as e:
+        logger.error(f"❌ Training failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Training failed: {str(e)}")
+
+@app.get("/models/status")
+async def get_models_status() -> Dict[str, Any]:
+    """Get status of all models"""
+    try:
+        logger.info("🔍 Checking model status")
+        
+        models_status = {
+            "transaction_categorizer": {
+                "loaded": _categorizer_model is not None,
+                "performance": model_manager.get_model_performance("transaction_categorizer")
+            },
+            "clustering": {"loaded": True, "type": "KMeans (stateless)"},
+            "anomaly_detection": {"loaded": True, "type": "IsolationForest (stateless)"},
+            "forecasting": {"loaded": True, "type": "EMA-based (stateless)"},
+            "budget_optimizer": {"loaded": True, "type": "Linear Program (stateless)"}
+        }
+        
+        return {
+            "timestamp": datetime.now().isoformat(),
+            "models": models_status,
+            "models_directory": str(model_manager.models_dir)
+        }
+    
+    except Exception as e:
+        logger.error(f"❌ Failed to get status: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # ============= Helper Functions =============

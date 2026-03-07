@@ -1,0 +1,72 @@
+{
+  "model_name": "transaction_categorizer",
+  "version_id": "transaction_categorizer_20260307_100920",
+  "saved_at": "2026-03-07T10:09:20.693410",
+  "path": "models/transaction_categorizer_20260307_100920.joblib",
+  "accuracy": 0.3333333333333333,
+  "precision": 0.3333333333333333,
+  "recall": 0.3333333333333333,
+  "f1_score": 0.3333333333333333,
+  "cv_mean": 0.23333333333333334,
+  "cv_std": 0.1977652929892177,
+  "training_samples": 27,
+  "test_samples": 3,
+  "num_categories": 12,
+  "categories": [
+    "Education",
+    "Entertainment",
+    "Food & Dining",
+    "Groceries",
+    "Healthcare",
+    "Insurance",
+    "Rent",
+    "Salary",
+    "Shopping",
+    "Transportation",
+    "Travel",
+    "Utilities"
+  ],
+  "top_features": [
+    [
+      "log_amount",
+      0.3176749901022344
+    ],
+    [
+      "bill",
+      0.1516511863847236
+    ],
+    [
+      "amazon",
+      0.09593898466734752
+    ],
+    [
+      "purchase",
+      0.08268139224180568
+    ],
+    [
+      "grocery",
+      0.07637681209090191
+    ],
+    [
+      "store",
+      0.06872675226902557
+    ],
+    [
+      "payment",
+      0.04878248044270837
+    ],
+    [
+      "grocery store",
+      0.044822324797225255
+    ],
+    [
+      "restaurant",
+      0.03968061711295511
+    ],
+    [
+      "type",
+      0.03740801961830994
+    ]
+  ],
+  "model_type": "RandomForest + TF-IDF"
+}

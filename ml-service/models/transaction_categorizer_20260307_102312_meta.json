@@ -1,0 +1,72 @@
+{
+  "model_name": "transaction_categorizer",
+  "version_id": "transaction_categorizer_20260307_102312",
+  "saved_at": "2026-03-07T10:23:12.927973",
+  "path": "models/transaction_categorizer_20260307_102312.joblib",
+  "accuracy": 0.9941690962099126,
+  "precision": 0.9944051089823686,
+  "recall": 0.9941690962099126,
+  "f1_score": 0.9941848569959921,
+  "cv_mean": 0.9920522828496174,
+  "cv_std": 0.002688017386654596,
+  "training_samples": 1371,
+  "test_samples": 343,
+  "num_categories": 12,
+  "categories": [
+    "Education",
+    "Entertainment",
+    "Food & Dining",
+    "Groceries",
+    "Healthcare",
+    "Insurance",
+    "Rent",
+    "Salary",
+    "Shopping",
+    "Transportation",
+    "Travel",
+    "Utilities"
+  ],
+  "top_features": [
+    [
+      "log_amount",
+      0.08404559686164494
+    ],
+    [
+      "type",
+      0.0633179089109651
+    ],
+    [
+      "bill",
+      0.04057253575085637
+    ],
+    [
+      "rent",
+      0.02898788612018519
+    ],
+    [
+      "booking",
+      0.023360362506367565
+    ],
+    [
+      "payment",
+      0.021636402507729025
+    ],
+    [
+      "premium",
+      0.02074268416950256
+    ],
+    [
+      "metro",
+      0.018718928054178387
+    ],
+    [
+      "health checkup",
+      0.018130763697227693
+    ],
+    [
+      "doctor",
+      0.017727304401078007
+    ]
+  ],
+  "model_type": "RandomForest + TF-IDF"
+}
