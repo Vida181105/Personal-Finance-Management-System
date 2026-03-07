@@ -664,3 +664,201 @@
  *       200:
  *         description: Category breakdown retrieved
  */
+
+/**
+ * @swagger
+ * /agents/run:
+ *   post:
+ *     summary: Run multi-agent orchestration cycle
+ *     description: Executes all financial agents (Financial Analyzer, Goal Optimizer, Alert Monitor, Insight Generator) in coordinated workflow
+ *     tags:
+ *       - Agent Orchestration
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Agent orchestration completed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Agent orchestration completed
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     contextVersion:
+ *                       type: number
+ *                       example: 42
+ *                     executedAgents:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                       example: ["financial_analyzer", "goal_optimizer", "alert_monitor", "insight_generator"]
+ *                     newRecommendations:
+ *                       type: number
+ *                       example: 5
+ *                     newAlerts:
+ *                       type: number
+ *                       example: 2
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       500:
+ *         description: Server error during agent execution
+ */
+
+/**
+ * @swagger
+ * /agents/context:
+ *   get:
+ *     summary: Get latest shared agent context
+ *     description: Retrieves the current shared context state including agent outputs, recommendations, and alerts
+ *     tags:
+ *       - Agent Orchestration
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Context retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     userId:
+ *                       type: string
+ *                       example: "507f1f77bcf86cd799439011"
+ *                     contextVersion:
+ *                       type: number
+ *                       example: 42
+ *                     sharedContext:
+ *                       type: object
+ *                       description: Agent-specific context data
+ *                     agentStates:
+ *                       type: object
+ *                       description: Per-agent execution status and metadata
+ *                     recommendations:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                     alerts:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                     updatedAt:
+ *                       type: string
+ *                       format: date-time
+ *       401:
+ *         description: Unauthorized
+ */
+
+/**
+ * @swagger
+ * /agents/messages:
+ *   get:
+ *     summary: Get recent inter-agent messages
+ *     description: Retrieves communication history between agents
+ *     tags:
+ *       - Agent Orchestration
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: limit
+ *         in: query
+ *         description: Number of recent messages to retrieve (max 200)
+ *         schema:
+ *           type: number
+ *           default: 30
+ *           minimum: 1
+ *           maximum: 200
+ *     responses:
+ *       200:
+ *         description: Messages retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                       type:
+ *                         type: string
+ *                         enum: [TASK, FINDINGS, ALERT, RECOMMENDATION, ESCALATION, REPORT]
+ *                       from:
+ *                         type: string
+ *                       to:
+ *                         type: string
+ *                       priority:
+ *                         type: number
+ *                       payload:
+ *                         type: object
+ *                       createdAt:
+ *                         type: string
+ *                         format: date-time
+ *       401:
+ *         description: Unauthorized
+ */
+
+/**
+ * @swagger
+ * /agents/state:
+ *   get:
+ *     summary: Get per-agent state snapshot
+ *     description: Retrieves execution status and metadata for each agent
+ *     tags:
+ *       - Agent Orchestration
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Agent states retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     financial_analyzer:
+ *                       type: object
+ *                       properties:
+ *                         status:
+ *                           type: string
+ *                           enum: [idle, running, completed, failed]
+ *                         lastRun:
+ *                           type: string
+ *                           format: date-time
+ *                         error:
+ *                           type: string
+ *                     goal_optimizer:
+ *                       type: object
+ *                     alert_monitor:
+ *                       type: object
+ *                     insight_generator:
+ *                       type: object
+ *       401:
+ *         description: Unauthorized
+ */

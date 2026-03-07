@@ -18,8 +18,6 @@ class MLController {
       const { userId } = req.user;
       const { n_clusters = 5 } = req.body;
 
-      console.log(`🔷 ML Clustering request for user ${userId}`);
-
       // Fetch all available transactions for better clustering (up to 300)
       const transactions = await Transaction.find({ userId })
         .select('date amount type category merchantName')
@@ -34,23 +32,24 @@ class MLController {
       }
 
       // Call ML service
-      const mlResponse = await axios.post(`${ML_SERVICE_URL}/cluster`, {
-        userId,
-        transactions: transactions.map((t) => ({
-          date: t.date.toISOString(),
-          amount: t.amount,
-          type: t.type,
-          category: t.category,
-          merchantName: t.merchantName,
-        })),
-        n_clusters,
-      });
+      const mlResponse = await axios.post(
+        `${ML_SERVICE_URL}/cluster`,
+        {
+          userId,
+          transactions: transactions.map((t) => ({
+            date: t.date.toISOString(),
+            amount: t.amount,
+            type: t.type,
+            category: t.category,
+            merchantName: t.merchantName,
+          })),
+          n_clusters,
+        },
+        { timeout: 10000 } // 10 second timeout
+      );
 
-      console.log(`✅ Clustering complete for ${userId}`);
       return ResponseHandler.success(res, 200, 'Clustering analysis complete', mlResponse.data);
     } catch (error) {
-      console.error('ML Clustering Error:', error.message);
-
       // Fallback if ML service is down
       if (error.code === 'ECONNREFUSED') {
         return ResponseHandler.error(
@@ -75,8 +74,6 @@ class MLController {
       const { userId } = req.user;
       const { contamination = 0.1 } = req.body;
 
-      console.log(`🔴 ML Anomaly detection for user ${userId}`);
-
       // Fetch all available transactions for better anomaly detection (up to 200)
       const transactions = await Transaction.find({ userId })
         .select('date amount type category merchantName')
@@ -91,23 +88,24 @@ class MLController {
       }
 
       // Call ML service
-      const mlResponse = await axios.post(`${ML_SERVICE_URL}/anomalies`, {
-        userId,
-        transactions: transactions.map((t) => ({
-          date: t.date.toISOString(),
-          amount: t.amount,
-          type: t.type,
-          category: t.category,
-          merchantName: t.merchantName,
-        })),
-        contamination,
-      });
+      const mlResponse = await axios.post(
+        `${ML_SERVICE_URL}/anomalies`,
+        {
+          userId,
+          transactions: transactions.map((t) => ({
+            date: t.date.toISOString(),
+            amount: t.amount,
+            type: t.type,
+            category: t.category,
+            merchantName: t.merchantName,
+          })),
+          contamination,
+        },
+        { timeout: 10000 } // 10 second timeout
+      );
 
-      console.log(`✅ Anomaly detection complete for ${userId}: ${mlResponse.data.anomalies.length} anomalies`);
       return ResponseHandler.success(res, 200, 'Anomaly detection complete', mlResponse.data);
     } catch (error) {
-      console.error('ML Anomaly Detection Error:', error.message);
-
       if (error.code === 'ECONNREFUSED') {
         return ResponseHandler.error(
           res,
@@ -131,8 +129,6 @@ class MLController {
       const { userId } = req.user;
       const { forecast_days = 30 } = req.body;
 
-      console.log(`📈 ML Forecasting for user ${userId}`);
-
       // Fetch user transactions
       const transactions = await Transaction.find({ userId })
         .select('date amount type category merchantName')
@@ -147,25 +143,26 @@ class MLController {
       }
 
       // Call ML service
-      const mlResponse = await axios.post(`${ML_SERVICE_URL}/forecast`, {
-        userId,
-        transactions: transactions
-          .reverse()
-          .map((t) => ({
-            date: t.date.toISOString(),
-            amount: t.amount,
-            type: t.type,
-            category: t.category,
-            merchantName: t.merchantName,
-          })),
-        forecast_days,
-      });
+      const mlResponse = await axios.post(
+        `${ML_SERVICE_URL}/forecast`,
+        {
+          userId,
+          transactions: transactions
+            .reverse()
+            .map((t) => ({
+              date: t.date.toISOString(),
+              amount: t.amount,
+              type: t.type,
+              category: t.category,
+              merchantName: t.merchantName,
+            })),
+          forecast_days,
+        },
+        { timeout: 10000 } // 10 second timeout
+      );
 
-      console.log(`✅ Forecasting complete for ${userId}`);
       return ResponseHandler.success(res, 200, 'Expense forecast generated', mlResponse.data);
     } catch (error) {
-      console.error('ML Forecasting Error:', error.message);
-
       if (error.code === 'ECONNREFUSED') {
         return ResponseHandler.error(
           res,

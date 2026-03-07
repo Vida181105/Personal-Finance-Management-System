@@ -1,0 +1,75 @@
+{
+  "model_name": "transaction_categorizer",
+  "version_id": "transaction_categorizer_20260307_102828",
+  "saved_at": "2026-03-07T10:28:28.500681",
+  "path": "models/transaction_categorizer_20260307_102828.joblib",
+  "accuracy": 0.9123222748815166,
+  "precision": 0.9456458660117664,
+  "recall": 0.9123222748815166,
+  "f1_score": 0.9186749019075375,
+  "cv_mean": 0.9200324513071992,
+  "cv_std": 0.029455266812344342,
+  "training_samples": 1292,
+  "test_samples": 422,
+  "num_categories": 12,
+  "categories": [
+    "Education",
+    "Entertainment",
+    "Food & Dining",
+    "Groceries",
+    "Healthcare",
+    "Insurance",
+    "Rent",
+    "Salary",
+    "Shopping",
+    "Transportation",
+    "Travel",
+    "Utilities"
+  ],
+  "split_strategy": "merchant_disjoint",
+  "train_unique_merchants": 69,
+  "test_unique_merchants": 18,
+  "top_features": [
+    [
+      "log_amount",
+      0.08791957334427791
+    ],
+    [
+      "type",
+      0.06543951805654576
+    ],
+    [
+      "rent",
+      0.03752668594655088
+    ],
+    [
+      "bill",
+      0.024831544105065256
+    ],
+    [
+      "premium",
+      0.024647768991487535
+    ],
+    [
+      "booking",
+      0.020792154757688856
+    ],
+    [
+      "metro",
+      0.01493984678127207
+    ],
+    [
+      "lease",
+      0.013372397654992879
+    ],
+    [
+      "coffee",
+      0.013286493454254122
+    ],
+    [
+      "online order",
+      0.01277452366797391
+    ]
+  ],
+  "model_type": "RandomForest + TF-IDF"
+}

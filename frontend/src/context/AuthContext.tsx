@@ -25,14 +25,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const initAuth = async () => {
       try {
         const storedUser = localStorage.getItem('user');
-        console.log('Stored user:', storedUser);
         if (storedUser && storedUser !== 'undefined') {
           const user = JSON.parse(storedUser);
-          console.log('Parsed user:', user);
           setUser(user);
         }
       } catch (error) {
-        console.error('Failed to initialize auth:', error);
         localStorage.removeItem('user');
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
@@ -45,15 +42,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, password: string) => {
-    console.log('AuthContext.login called with:', { email });
     const { token, refreshToken, user: userData } = await authService.login(email, password);
-    console.log('Login response received:', { userData });
     localStorage.setItem('access_token', token);
     localStorage.setItem('refresh_token', refreshToken);
     localStorage.setItem('user', JSON.stringify(userData));
-    console.log('Tokens stored, setting user state');
     setUser(userData);
-    console.log('User state updated');
   };
 
   const register = async (name: string, email: string, password: string, monthlyIncome: number) => {

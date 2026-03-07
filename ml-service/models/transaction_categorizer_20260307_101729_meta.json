@@ -1,0 +1,72 @@
+{
+  "model_name": "transaction_categorizer",
+  "version_id": "transaction_categorizer_20260307_101729",
+  "saved_at": "2026-03-07T10:17:29.792534",
+  "path": "models/transaction_categorizer_20260307_101729.joblib",
+  "accuracy": 0.6265060240963856,
+  "precision": 0.6559112705000604,
+  "recall": 0.6265060240963856,
+  "f1_score": 0.6181603930363676,
+  "cv_mean": 0.6509231178113192,
+  "cv_std": 0.07177368284138202,
+  "training_samples": 332,
+  "test_samples": 83,
+  "num_categories": 12,
+  "categories": [
+    "Education",
+    "Entertainment",
+    "Food & Dining",
+    "Groceries",
+    "Healthcare",
+    "Insurance",
+    "Rent",
+    "Salary",
+    "Shopping",
+    "Transportation",
+    "Travel",
+    "Utilities"
+  ],
+  "top_features": [
+    [
+      "log_amount",
+      0.1458217337246941
+    ],
+    [
+      "insurance",
+      0.08831721394879738
+    ],
+    [
+      "type",
+      0.07272226526543844
+    ],
+    [
+      "landlord",
+      0.027015270083314735
+    ],
+    [
+      "rental",
+      0.02431250821812267
+    ],
+    [
+      "rent",
+      0.023753707411026993
+    ],
+    [
+      "grocery",
+      0.01933549484185684
+    ],
+    [
+      "bill",
+      0.01823927504433345
+    ],
+    [
+      "prep",
+      0.01754391746384312
+    ],
+    [
+      "payment",
+      0.016393312959537533
+    ]
+  ],
+  "model_type": "RandomForest + TF-IDF"
+}

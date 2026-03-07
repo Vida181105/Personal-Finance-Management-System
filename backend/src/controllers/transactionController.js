@@ -33,8 +33,6 @@ class TransactionController {
       const transactions = await Transaction.find(query).sort(sortBy).skip(skip).limit(limitNum).lean();
       const total = await Transaction.countDocuments(query);
 
-      console.log(`📊 Query result for userId=${userId}: found ${total} total, returning ${transactions.length}`);
-
       const summary = await Transaction.aggregate([
         { $match: query },
         {
@@ -132,56 +130,77 @@ class TransactionController {
       try {
         // Try to auto-categorize if description is provided
         if (description) {
-          const categorizerResponse = await fetch(`${process.env.ML_SERVICE_URL || 'http://localhost:8000'}/categorize`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              description,
-              amount,
-              merchantName: merchantName || 'Other',
-              type,
-            }),
-          });
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+          try {
+            const categorizerResponse = await fetch(
+              `${process.env.ML_SERVICE_URL || 'http://localhost:8000'}/categorize`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  description,
+                  amount,
+                  merchantName: merchantName || 'Other',
+                  type,
+                }),
+                signal: controller.signal,
+              }
+            );
+            clearTimeout(timeout);
 
-          if (categorizerResponse.ok) {
-            const categorizeData = await categorizerResponse.json();
-            // Store suggested category (don't override if user explicitly set it)
-            transaction.suggested_category = categorizeData.predicted_category;
-            transaction.category_confidence = categorizeData.confidence;
-            console.log(`✅ ML categorized as: ${categorizeData.predicted_category} (${(categorizeData.confidence * 100).toFixed(0)}%)`);
+            if (categorizerResponse.ok) {
+              const categorizeData = await categorizerResponse.json();
+              // Store suggested category (don't override if user explicitly set it)
+              transaction.suggested_category = categorizeData.predicted_category;
+              transaction.category_confidence = categorizeData.confidence;
+            }
+          } catch (err) {
+            clearTimeout(timeout);
+            throw err;
           }
         }
-        
+
         // Score transaction for anomalies
         const historicalTxs = await Transaction.find({ userId }).select('date amount type category merchantName').lean().limit(100);
-        
-        if (historicalTxs.length >= 5) {
-          const mlResponse = await fetch(`${process.env.ML_SERVICE_URL || 'http://localhost:8000'}/score-transaction`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              userId,
-              new_transaction: {
-                date: transaction.date.toISOString(),
-                amount: transaction.amount,
-                type: transaction.type,
-                category: transaction.category,
-                merchantName: transaction.merchantName,
-              },
-              historical_transactions: historicalTxs,
-            }),
-          });
 
-          if (mlResponse.ok) {
-            const scoreData = await mlResponse.json();
-            transaction.anomaly_score = scoreData.anomaly_score || 0;
-            transaction.is_anomaly = scoreData.is_anomaly || false;
-            transaction.anomaly_reason = scoreData.reason || '';
-            console.log(`✅ ML scoring: ${scoreData.risk_level} (${(scoreData.anomaly_score * 100).toFixed(0)}%)`);
+        if (historicalTxs.length >= 5) {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+          try {
+            const mlResponse = await fetch(
+              `${process.env.ML_SERVICE_URL || 'http://localhost:8000'}/score-transaction`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  userId,
+                  new_transaction: {
+                    date: transaction.date.toISOString(),
+                    amount: transaction.amount,
+                    type: transaction.type,
+                    category: transaction.category,
+                    merchantName: transaction.merchantName,
+                  },
+                  historical_transactions: historicalTxs,
+                }),
+                signal: controller.signal,
+              }
+            );
+            clearTimeout(timeout);
+
+            if (mlResponse.ok) {
+              const scoreData = await mlResponse.json();
+              transaction.anomaly_score = scoreData.anomaly_score || 0;
+              transaction.is_anomaly = scoreData.is_anomaly || false;
+              transaction.anomaly_reason = scoreData.reason || '';
+            }
+          } catch (err) {
+            clearTimeout(timeout);
+            throw err;
           }
         }
       } catch (mlError) {
-        console.warn('⚠️ ML service failed (non-blocking):', mlError.message);
         // Continue without ML enhancements
       }
 
@@ -382,8 +401,6 @@ class TransactionController {
       let enrichedCount = 0;
       let skippedCount = 0;
 
-      console.log(`🔄 Starting enrichment for ${transactions.length} transactions...`);
-
       for (const transaction of transactions) {
         try {
           let needsSave = false;
@@ -391,7 +408,8 @@ class TransactionController {
           // Categorize if not already done
           if (!transaction.suggested_category && transaction.description) {
             try {
-              console.log(`📝 Categorizing: ${transaction.description}`);
+              const controller = new AbortController();
+              const timeout = setTimeout(() => controller.abort(), 5000);
               const categorizerResponse = await fetch(`${mlServiceUrl}/categorize`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -401,19 +419,18 @@ class TransactionController {
                   merchantName: transaction.merchantName || 'Other',
                   type: transaction.type,
                 }),
+                signal: controller.signal,
               });
+              clearTimeout(timeout);
 
               if (categorizerResponse.ok) {
                 const categorizeData = await categorizerResponse.json();
                 transaction.suggested_category = categorizeData.predicted_category;
                 transaction.category_confidence = categorizeData.confidence || 0.5;
                 needsSave = true;
-                console.log(`✅ Categorized as: ${categorizeData.predicted_category} (${(categorizeData.confidence * 100).toFixed(0)}%)`);
-              } else {
-                console.warn(`⚠️ Categorizer returned ${categorizerResponse.status}`);
               }
             } catch (err) {
-              console.warn(`⚠️ Categorization failed for ${transaction._id}:`, err.message);
+              // Silent fail - continue without categorization
             }
           }
 
@@ -426,38 +443,40 @@ class TransactionController {
                 .limit(100);
 
               if (historicalTxs.length >= 5) {
-                console.log(`⚠️ Scoring anomaly with ${historicalTxs.length} historical transactions`);
-                const scoreResponse = await fetch(`${mlServiceUrl}/score-transaction`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    userId,
-                    new_transaction: {
-                      date: transaction.date.toISOString(),
-                      amount: transaction.amount,
-                      type: transaction.type,
-                      category: transaction.category,
-                      merchantName: transaction.merchantName,
-                    },
-                    historical_transactions: historicalTxs,
-                  }),
-                });
+                try {
+                  const controller = new AbortController();
+                  const timeout = setTimeout(() => controller.abort(), 5000);
+                  const scoreResponse = await fetch(`${mlServiceUrl}/score-transaction`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      userId,
+                      new_transaction: {
+                        date: transaction.date.toISOString(),
+                        amount: transaction.amount,
+                        type: transaction.type,
+                        category: transaction.category,
+                        merchantName: transaction.merchantName,
+                      },
+                      historical_transactions: historicalTxs,
+                    }),
+                    signal: controller.signal,
+                  });
+                  clearTimeout(timeout);
 
-                if (scoreResponse.ok) {
-                  const scoreData = await scoreResponse.json();
-                  transaction.anomaly_score = scoreData.anomaly_score || 0;
-                  transaction.is_anomaly = scoreData.is_anomaly || false;
-                  transaction.anomaly_reason = scoreData.reason || '';
-                  needsSave = true;
-                  console.log(`✅ Anomaly scored: ${(transaction.anomaly_score * 100).toFixed(0)}% (is_anomaly: ${transaction.is_anomaly})`);
-                } else {
-                  console.warn(`⚠️ Scorer returned ${scoreResponse.status}`);
+                  if (scoreResponse.ok) {
+                    const scoreData = await scoreResponse.json();
+                    transaction.anomaly_score = scoreData.anomaly_score || 0;
+                    transaction.is_anomaly = scoreData.is_anomaly || false;
+                    transaction.anomaly_reason = scoreData.reason || '';
+                    needsSave = true;
+                  }
+                } catch (err) {
+                  // Silent fail - continue without scoring
                 }
-              } else {
-                console.log(`⏭️ Skipping anomaly scoring: only ${historicalTxs.length} historical transactions (need >= 5)`);
               }
             } catch (err) {
-              console.warn(`⚠️ Anomaly scoring failed for ${transaction._id}:`, err.message);
+              // Silent fail - continue without anomaly scoring
             }
           } else {
             skippedCount++;
@@ -467,21 +486,18 @@ class TransactionController {
           if (needsSave) {
             await transaction.save();
             enrichedCount++;
-            console.log(`💾 Saved transaction ${transaction._id}`);
           }
         } catch (txError) {
-          console.warn(`⚠️ Failed to process transaction ${transaction._id}:`, txError.message);
+          // Continue with next transaction
         }
       }
 
-      console.log(`✅ Enrichment complete: ${enrichedCount} enriched, ${skippedCount} already enriched`);
       return ResponseHandler.success(res, 200, `Enriched ${enrichedCount} transactions`, {
         enrichedCount,
         skippedCount,
         totalCount: transactions.length,
       });
     } catch (error) {
-      console.error('❌ Enrichment error:', error.message);
       next(error);
     }
   }
