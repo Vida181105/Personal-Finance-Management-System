@@ -327,15 +327,6 @@ User registers/logs in
   → Middleware verifies JWT on protected routes
 ```
 
-
-## Contributing
-
-1. Fork repository
-2. Create feature branch: `git checkout -b feature/new-feature`
-3. Commit: `git commit -am 'Add feature'`
-4. Push: `git push origin feature/new-feature`
-5. Open Pull Request
-
 ---
 
 ## License
