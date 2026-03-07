@@ -30,11 +30,16 @@ function prioritizeRecommendations(recommendations = []) {
     const dedup = new Map();
 
     for (const rec of recommendations) {
-        const key = `${rec.title}::${rec.sourceAgent}`;
-        const score = (rec.priority || 3) + severityWeight(rec.severity);
+        const normalized = rec && typeof rec.toObject === 'function' ? rec.toObject() : rec;
+        if (!normalized) {
+            continue;
+        }
+
+        const key = `${normalized.title || normalized.message || 'untitled'}::${normalized.sourceAgent || 'unknown'}`;
+        const score = (normalized.priority || 3) + severityWeight(normalized.severity);
         const previous = dedup.get(key);
         if (!previous || previous.__score < score) {
-            dedup.set(key, { ...rec, __score: score });
+            dedup.set(key, { ...normalized, __score: score });
         }
     }
 
@@ -59,7 +64,7 @@ async function runAgent(userId, agentName, runInput, sharedContext) {
 }
 
 async function runCoordinatorCycle({ userId, goals = [], query = '' }) {
-    queue.clear(userId);
+    await queue.clear(userId);
 
     const startMessage = createAgentMessage({
         from: 'coordinator',
@@ -83,27 +88,27 @@ async function runCoordinatorCycle({ userId, goals = [], query = '' }) {
         },
     });
 
-    queue.enqueue(
+    await queue.enqueue(
         userId,
         createAgentMessage({ from: 'coordinator', to: 'financialAnalyzer', type: MESSAGE_TYPES.TASK, priority: 5 })
     );
-    queue.enqueue(
+    await queue.enqueue(
         userId,
         createAgentMessage({ from: 'coordinator', to: 'goalOptimizer', type: MESSAGE_TYPES.TASK, priority: 4 })
     );
-    queue.enqueue(
+    await queue.enqueue(
         userId,
         createAgentMessage({ from: 'coordinator', to: 'alertMonitoring', type: MESSAGE_TYPES.TASK, priority: 5 })
     );
-    queue.enqueue(
+    await queue.enqueue(
         userId,
         createAgentMessage({ from: 'coordinator', to: 'insightGeneration', type: MESSAGE_TYPES.TASK, priority: 3 })
     );
 
     const processed = [];
 
-    while (queue.size(userId) > 0) {
-        const msg = queue.dequeue(userId);
+    while (await queue.size(userId) > 0) {
+        const msg = await queue.dequeue(userId);
         if (!msg) {
             break;
         }
