@@ -327,32 +327,6 @@ User registers/logs in
   → Middleware verifies JWT on protected routes
 ```
 
-## Troubleshooting
-
-### Backend won't start (GROQ_API_KEY error)
-The Groq client is lazily initialized — it only crashes if you try to use the AI Assistant. Set `GROQ_API_KEY` in `.env` to enable it, or leave it unset and avoid the AI Assistant.
-
-### ML Service offline
-Check that the backend has `ML_SERVICE_URL` set to the correct Render service URL. Both services must be running for transaction categorization and analytics to work.
-
-### Budget Optimizer shows "Monthly Income: ₹0"
-Make sure:
-1. Backend is connected to MongoDB
-2. The logged-in user has a `monthlyIncome` field in their User document
-3. Check browser console for API errors
-
-### Relative API calls fail on Vercel
-Frontend must use `NEXT_PUBLIC_API_URL` env var (absolute URL), not `/api/...` (which hits Next.js internal routing).
-
-### Transaction enrichment endpoint returns 404
-The enrichment endpoint (`POST /api/transactions/:userId/enrich`) requires the frontend to:
-1. Use full backend URL via `NEXT_PUBLIC_API_URL` env variable
-2. Pass the correct `userId` (string "U005", not MongoDB ObjectId)
-3. Include Authorization header with valid JWT
-
-### Goals disappear after page reload
-Make sure localStorage isn't disabled in browser. Goals are stored in `localStorage` key `budget_optimizer_goals`. Check DevTools → Application → Local Storage.
-
 
 ## Contributing
 
