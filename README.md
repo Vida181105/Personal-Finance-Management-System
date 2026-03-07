@@ -2,7 +2,7 @@
 
 A comprehensive web application for managing personal finances with transaction tracking, smart categorization, ML-powered analytics, and AI-driven insights.
 
-**Live App**: https://personal-finance-management-system-haenna.vercel.app
+**Live App**: https://personal-finance-management-system-henna.vercel.app
 
 ---
 
