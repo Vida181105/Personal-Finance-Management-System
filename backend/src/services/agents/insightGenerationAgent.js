@@ -1,33 +1,35 @@
 const { createAgentMessage, MESSAGE_TYPES } = require('./messageProtocol');
 
-async function callClaude(promptText) {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+async function callGemini(promptText) {
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
         return null;
     }
 
-    const model = process.env.CLAUDE_MODEL || 'claude-3-5-sonnet-20241022';
-
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: {
-            'content-type': 'application/json',
-            'x-api-key': apiKey,
-            'anthropic-version': '2023-06-01',
+            'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            model,
-            max_tokens: 900,
-            messages: [{ role: 'user', content: promptText }],
+            contents: [{
+                parts: [{
+                    text: `You are a personal finance insight engine. Keep advice practical, concise, and actionable.\n\n${promptText}`
+                }]
+            }],
+            generationConfig: {
+                maxOutputTokens: 900,
+                temperature: 0.3,
+            }
         }),
     });
 
     if (!resp.ok) {
-        throw new Error(`Claude API error: ${resp.status}`);
+        throw new Error(`Gemini API error: ${resp.status}`);
     }
 
     const data = await resp.json();
-    const firstText = data?.content?.find((item) => item.type === 'text')?.text;
+    const firstText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
     return firstText || null;
 }
 
@@ -74,9 +76,9 @@ async function runInsightGenerationAgent({ userId, query, sharedContext }) {
     let narrative = null;
     let source = 'fallback';
     try {
-        narrative = await callClaude(prompt);
+        narrative = await callGemini(prompt);
         if (narrative) {
-            source = 'claude';
+            source = 'gemini';
         }
     } catch (error) {
         narrative = null;
