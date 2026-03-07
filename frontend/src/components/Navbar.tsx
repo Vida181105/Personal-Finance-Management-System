@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useSidebar } from '@/context/SidebarContext';
-import { ThemeToggle } from './ThemeToggle';
 
 export const Navbar: React.FC = () => {
   const router = useRouter();
@@ -35,7 +34,6 @@ export const Navbar: React.FC = () => {
               Transactions
             </Link>
             <div className="flex items-center space-x-4">
-              <ThemeToggle />
               <span className="text-gray-700 dark:text-gray-300">{user?.name}</span>
               <button
                 onClick={handleLogout}
