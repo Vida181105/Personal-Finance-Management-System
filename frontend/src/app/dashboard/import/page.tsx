@@ -119,7 +119,7 @@ export default function ImportPage() {
                 accept=".csv"
                 onChange={handleFileChange}
                 disabled={loading}
-                className="w-full"
+                className="w-full text-gray-900 file:mr-4 file:rounded-md file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100"
               />
               {file && (
                 <p className="mt-2 text-sm text-green-600 font-medium">
