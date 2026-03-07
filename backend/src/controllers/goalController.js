@@ -1,11 +1,6 @@
+const mongoose = require('mongoose');
 const Goal = require('../models/Goal');
 const ResponseHandler = require('../utils/responseHandler');
-
-const successResponse = (res, message, data = null, statusCode = 200) =>
-    ResponseHandler.success(res, statusCode, message, data);
-
-const errorResponse = (res, message, statusCode = 500, error = null, code = null) =>
-    ResponseHandler.error(res, statusCode, message, error, code);
 
 /**
  * Get all goals for authenticated user
@@ -20,9 +15,9 @@ exports.getGoals = async (req, res) => {
 
         const goals = await Goal.find(filter).sort({ priority: -1, deadline: 1 });
 
-        return successResponse(res, 'Goals retrieved successfully', { goals });
+        return ResponseHandler.success(res, 200, 'Goals retrieved successfully', { goals });
     } catch (error) {
-        return errorResponse(res, error.message, 500);
+        return ResponseHandler.error(res, 500, error.message);
     }
 };
 
@@ -37,12 +32,12 @@ exports.getGoalById = async (req, res) => {
         });
 
         if (!goal) {
-            return errorResponse(res, 'Goal not found', 404);
+            return ResponseHandler.error(res, 404, 'Goal not found');
         }
 
-        return successResponse(res, 'Goal retrieved successfully', { goal });
+        return ResponseHandler.success(res, 200, 'Goal retrieved successfully', { goal });
     } catch (error) {
-        return errorResponse(res, error.message, 500);
+        return ResponseHandler.error(res, 500, error.message);
     }
 };
 
@@ -55,16 +50,16 @@ exports.createGoal = async (req, res) => {
 
         // Validation
         if (!name || !targetAmount || !deadline) {
-            return errorResponse(res, 'Name, target amount, and deadline are required', 400);
+            return ResponseHandler.error(res, 400, 'Name, target amount, and deadline are required');
         }
 
         if (targetAmount <= 0) {
-            return errorResponse(res, 'Target amount must be positive', 400);
+            return ResponseHandler.error(res, 400, 'Target amount must be positive');
         }
 
         const deadlineDate = new Date(deadline);
         if (deadlineDate <= new Date()) {
-            return errorResponse(res, 'Deadline must be in the future', 400);
+            return ResponseHandler.error(res, 400, 'Deadline must be in the future');
         }
 
         const goal = await Goal.create({
@@ -78,10 +73,10 @@ exports.createGoal = async (req, res) => {
             priority: priority || 3
         });
 
-        return successResponse(res, 'Goal created successfully', { goal }, 201);
+        return ResponseHandler.success(res, 201, 'Goal created successfully', { goal });
     } catch (error) {
 
-        return errorResponse(res, error.message, 500);
+        return ResponseHandler.error(res, 500, error.message);
     }
 };
 
@@ -98,7 +93,7 @@ exports.updateGoal = async (req, res) => {
         });
 
         if (!goal) {
-            return errorResponse(res, 'Goal not found', 404);
+            return ResponseHandler.error(res, 404, 'Goal not found');
         }
 
         // Update fields
@@ -107,13 +102,13 @@ exports.updateGoal = async (req, res) => {
         if (type !== undefined) goal.type = type;
         if (targetAmount !== undefined) {
             if (targetAmount <= 0) {
-                return errorResponse(res, 'Target amount must be positive', 400);
+                return ResponseHandler.error(res, 400, 'Target amount must be positive');
             }
             goal.targetAmount = targetAmount;
         }
         if (currentAmount !== undefined) {
             if (currentAmount < 0) {
-                return errorResponse(res, 'Current amount cannot be negative', 400);
+                return ResponseHandler.error(res, 400, 'Current amount cannot be negative');
             }
             goal.currentAmount = currentAmount;
             goal.updateMilestones();
@@ -121,7 +116,7 @@ exports.updateGoal = async (req, res) => {
         if (deadline !== undefined) {
             const deadlineDate = new Date(deadline);
             if (deadlineDate <= new Date() && goal.status === 'active') {
-                return errorResponse(res, 'Deadline must be in the future for active goals', 400);
+                return ResponseHandler.error(res, 400, 'Deadline must be in the future for active goals');
             }
             goal.deadline = deadlineDate;
         }
@@ -130,9 +125,9 @@ exports.updateGoal = async (req, res) => {
 
         await goal.save();
 
-        return successResponse(res, 'Goal updated successfully', { goal });
+        return ResponseHandler.success(res, 200, 'Goal updated successfully', { goal });
     } catch (error) {
-        return errorResponse(res, error.message, 500);
+        return ResponseHandler.error(res, 500, error.message);
     }
 };
 
@@ -144,7 +139,7 @@ exports.updateProgress = async (req, res) => {
         const { amount } = req.body;
 
         if (amount === undefined || amount === 0) {
-            return errorResponse(res, 'Amount is required and must be non-zero', 400);
+            return ResponseHandler.error(res, 400, 'Amount is required and must be non-zero');
         }
 
         const goal = await Goal.findOne({
@@ -153,11 +148,11 @@ exports.updateProgress = async (req, res) => {
         });
 
         if (!goal) {
-            return errorResponse(res, 'Goal not found', 404);
+            return ResponseHandler.error(res, 404, 'Goal not found');
         }
 
         if (goal.status !== 'active') {
-            return errorResponse(res, 'Cannot update progress for inactive goals', 400);
+            return ResponseHandler.error(res, 400, 'Cannot update progress for inactive goals');
         }
 
         goal.currentAmount = Math.max(0, goal.currentAmount + amount);
@@ -171,13 +166,13 @@ exports.updateProgress = async (req, res) => {
             (new Date() - new Date(m.achievedDate)) < 5000 // Within last 5 seconds
         );
 
-        return successResponse(res, 'Goal progress updated successfully', {
+        return ResponseHandler.success(res, 200, 'Goal progress updated successfully', {
             goal,
             newMilestones: newlyAchieved.map(m => m.percentage)
         });
     } catch (error) {
         console.error('Update progress error:', error);
-        return errorResponse(res, error.message, 500);
+        return ResponseHandler.error(res, 500, error.message);
     }
 };
 
@@ -192,12 +187,12 @@ exports.deleteGoal = async (req, res) => {
         });
 
         if (!goal) {
-            return errorResponse(res, 'Goal not found', 404);
+            return ResponseHandler.error(res, 404, 'Goal not found');
         }
 
-        return successResponse(res, 'Goal deleted successfully');
+        return ResponseHandler.success(res, 200, 'Goal deleted successfully');
     } catch (error) {
-        return errorResponse(res, error.message, 500);
+        return ResponseHandler.error(res, 500, error.message);
     }
 };
 
@@ -231,9 +226,9 @@ exports.getGoalStats = async (req, res) => {
             }))
         };
 
-        return successResponse(res, 'Goal statistics retrieved successfully', stats);
+        return ResponseHandler.success(res, 200, 'Goal statistics retrieved successfully', stats);
     } catch (error) {
 
-        return errorResponse(res, error.message, 500);
+        return ResponseHandler.error(res, 500, error.message);
     }
 };

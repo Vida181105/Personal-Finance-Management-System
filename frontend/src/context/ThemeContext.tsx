@@ -21,30 +21,16 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const [isDark, setIsDark] = useState(false);
 
     useEffect(() => {
-        // Check localStorage and system preference
-        const stored = localStorage.getItem('theme');
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-        const shouldBeDark = stored === 'dark' || (!stored && prefersDark);
-        setIsDark(shouldBeDark);
-
-        if (shouldBeDark) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
+        // Force light mode and clear stale dark preference.
+        setIsDark(false);
+        localStorage.setItem('theme', 'light');
+        document.documentElement.classList.remove('dark');
     }, []);
 
     const toggleTheme = () => {
-        const newIsDark = !isDark;
-        setIsDark(newIsDark);
-        localStorage.setItem('theme', newIsDark ? 'dark' : 'light');
-
-        if (newIsDark) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
+        setIsDark(false);
+        localStorage.setItem('theme', 'light');
+        document.documentElement.classList.remove('dark');
     };
 
     return (
