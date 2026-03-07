@@ -1,4 +1,3 @@
-const mongoose = require('mongoose');
 const Goal = require('../models/Goal');
 const ResponseHandler = require('../utils/responseHandler');
 
@@ -203,20 +202,19 @@ exports.getGoalStats = async (req, res) => {
     try {
         const userId = req.user.id;
 
-        const [active, completed, totalSavings, goals] = await Promise.all([
+        const [active, completed, goals] = await Promise.all([
             Goal.countDocuments({ userId, status: 'active' }),
             Goal.countDocuments({ userId, status: 'completed' }),
-            Goal.aggregate([
-                { $match: { userId: new mongoose.Types.ObjectId(userId), status: 'active' } },
-                { $group: { _id: null, total: { $sum: '$currentAmount' } } }
-            ]),
             Goal.find({ userId, status: 'active' }).sort({ deadline: 1 }).limit(5)
         ]);
+
+        const activeGoalsForTotal = await Goal.find({ userId, status: 'active' }).select('currentAmount');
+        const totalSaved = activeGoalsForTotal.reduce((sum, goal) => sum + (goal.currentAmount || 0), 0);
 
         const stats = {
             activeGoals: active,
             completedGoals: completed,
-            totalSaved: totalSavings[0]?.total || 0,
+            totalSaved,
             upcomingDeadlines: goals.map(g => ({
                 id: g._id,
                 name: g.name,
