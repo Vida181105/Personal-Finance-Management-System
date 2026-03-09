@@ -1,3 +1,4 @@
+const axios = require('axios');
 const Transaction = require('../models/Transaction');
 const ResponseHandler = require('../utils/responseHandler');
 
@@ -67,17 +68,40 @@ class BudgetController {
         minimum_expense_ratio: minimumExpenseRatio,
       };
 
-      const mlResponse = await fetch(`${process.env.ML_SERVICE_URL || 'http://localhost:8000'}/optimize-budget`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(optimizationRequest),
-      });
-
-      if (!mlResponse.ok) {
-        throw new Error('ML service optimization failed');
+      let optimizationPlan;
+      try {
+        const mlResponse = await axios.post(
+          `${process.env.ML_SERVICE_URL || 'http://localhost:8000'}/optimize-budget`,
+          optimizationRequest,
+          { timeout: 30000 }
+        );
+        optimizationPlan = mlResponse.data;
+      } catch (mlError) {
+        const mlStatus = mlError?.response?.status;
+        if (
+          mlError.code === 'ECONNREFUSED' ||
+          mlError.code === 'ECONNABORTED' ||
+          mlStatus === 502 ||
+          mlStatus === 503 ||
+          mlStatus === 504
+        ) {
+          return ResponseHandler.error(
+            res, 503,
+            'Budget optimization service is temporarily unavailable. Please try again in a moment.',
+            null,
+            'ML_SERVICE_UNAVAILABLE'
+          );
+        }
+        if (mlStatus === 429) {
+          return ResponseHandler.error(
+            res, 429,
+            'Budget optimization is rate-limited. Please wait a minute and try again.',
+            null,
+            'ML_RATE_LIMIT'
+          );
+        }
+        throw mlError;
       }
-
-      const optimizationPlan = await mlResponse.json();
 
       return ResponseHandler.success(res, 200, 'Budget optimized', optimizationPlan);
     } catch (error) {

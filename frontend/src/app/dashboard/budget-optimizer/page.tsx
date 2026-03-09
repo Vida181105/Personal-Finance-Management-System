@@ -72,7 +72,7 @@ export default function BudgetOptimizerPage() {
       }
       setOptimizationPlan(plan);
     } catch (err: any) {
-      setError(err.message || 'Failed to optimize budget');
+      setError(err.response?.data?.message || err.message || 'Failed to optimize budget');
     } finally {
       setLoading(false);
     }

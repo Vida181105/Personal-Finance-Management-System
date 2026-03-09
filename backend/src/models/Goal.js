@@ -96,7 +96,7 @@ goalSchema.set('toJSON', { virtuals: true });
 goalSchema.set('toObject', { virtuals: true });
 
 // Auto-generate milestones on creation
-goalSchema.pre('save', function (next) {
+goalSchema.pre('save', async function () {
     if (this.isNew && this.milestones.length === 0) {
         this.milestones = [
             { percentage: 25, targetAmount: this.targetAmount * 0.25, achieved: false },
@@ -105,7 +105,6 @@ goalSchema.pre('save', function (next) {
             { percentage: 100, targetAmount: this.targetAmount, achieved: false }
         ];
     }
-    next();
 });
 
 // Update milestone achievements based on current amount
