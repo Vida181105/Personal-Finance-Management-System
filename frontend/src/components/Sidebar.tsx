@@ -74,12 +74,6 @@ export function Sidebar() {
             💳 Transactions
           </Link>
           <Link
-            href="/dashboard/goals"
-            className="block px-4 py-2 rounded-lg hover:bg-gray-800 transition"
-          >
-            🎯 Goals
-          </Link>
-          <Link
             href="/dashboard/analytics"
             className="block px-4 py-2 rounded-lg hover:bg-gray-800 transition"
           >
