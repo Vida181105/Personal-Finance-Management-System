@@ -421,19 +421,10 @@ export default function MLAnalyticsPage() {
         }
       }
     } catch (err: unknown) {
-      const status = (err as { response?: { status?: number } })?.response?.status;
-      if (status === 429) {
-        setErrors((p) => ({
-          ...p,
-          [tab]: 'ML analytics is rate-limited right now. Please wait about a minute and try again.',
-        }));
-        return;
-      }
-
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
         (err as Error).message ||
-        'Analysis failed';
+        'Analysis failed. Please try again.';
       setErrors((p) => ({ ...p, [tab]: msg }));
     } finally {
       setLoading((p) => ({ ...p, [tab]: false }));

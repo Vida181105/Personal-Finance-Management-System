@@ -185,7 +185,7 @@ def health_check():
     }
 
 @app.post("/cluster")
-async def clustering_analysis(request: ClusteringRequest) -> ClusteringResponse:
+def clustering_analysis(request: ClusteringRequest) -> ClusteringResponse:
     """
     Segment spending patterns using KMeans clustering
     Groups transactions into spending pattern clusters
@@ -256,7 +256,7 @@ async def clustering_analysis(request: ClusteringRequest) -> ClusteringResponse:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/anomalies")
-async def anomaly_detection(request: AnomalyRequest) -> AnomalyResponse:
+def anomaly_detection(request: AnomalyRequest) -> AnomalyResponse:
     """
     Detect unusual transaction patterns using Isolation Forest
     Identifies transactions that deviate from normal spending behavior
@@ -329,7 +329,7 @@ async def anomaly_detection(request: AnomalyRequest) -> AnomalyResponse:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/forecast")
-async def expense_forecasting(request: ForecastingRequest) -> ForecastingResponse:
+def expense_forecasting(request: ForecastingRequest) -> ForecastingResponse:
     """
     Forecast future spending using time series analysis
     Predicts daily/weekly expense patterns for budget planning
@@ -458,7 +458,7 @@ async def expense_forecasting(request: ForecastingRequest) -> ForecastingRespons
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/score-transaction")
-async def score_single_transaction(request: TransactionScoringRequest) -> TransactionScoringResponse:
+def score_single_transaction(request: TransactionScoringRequest) -> TransactionScoringResponse:
     """
     Score a single transaction for anomaly risk
     Used for real-time detection when user creates/modifies transactions
@@ -549,7 +549,7 @@ async def score_single_transaction(request: TransactionScoringRequest) -> Transa
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/categorize")
-async def categorize_transaction(request: CategorizerRequest) -> CategorizerResponse:
+def categorize_transaction(request: CategorizerRequest) -> CategorizerResponse:
     """
     Predict transaction category using Random Forest classifier trained on transaction patterns
     Features: TF-IDF of description + merchant, log(amount), transaction type
@@ -688,7 +688,7 @@ def _categorize_with_rules(request: CategorizerRequest) -> CategorizerResponse:
     )
 
 @app.post("/optimize-budget")
-async def optimize_budget(request: BudgetOptimizerRequest) -> BudgetOptimizerResponse:
+def optimize_budget(request: BudgetOptimizerRequest) -> BudgetOptimizerResponse:
     """
     Optimize budget allocation across categories and savings goals.
     - Each goal gets exactly the monthly amount it needs: (target - current) / months

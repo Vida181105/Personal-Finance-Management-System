@@ -81,10 +81,10 @@ function handleMlServiceError(error, res, next) {
   if (status === 429) {
     return ResponseHandler.error(
       res,
-      429,
-      'ML analytics is rate-limited right now. Please wait about a minute and try again.',
+      503,
+      'ML service is busy processing another request. Please wait a moment and try again.',
       null,
-      'ML_RATE_LIMIT'
+      'ML_SERVICE_BUSY'
     );
   }
 
@@ -144,7 +144,7 @@ class MLController {
         });
       }
 
-      // Call ML service
+      // Call ML service (pure scikit-learn KMeans — no AI/Groq dependency)
       const mlResponse = await postToMlWithRetry(
         '/cluster',
         {
@@ -158,7 +158,7 @@ class MLController {
           })),
           n_clusters,
         },
-        10000,
+        30000,
         1
       );
 
@@ -198,7 +198,7 @@ class MLController {
         });
       }
 
-      // Call ML service
+      // Call ML service (pure scikit-learn IsolationForest — no AI/Groq dependency)
       const mlResponse = await postToMlWithRetry(
         '/anomalies',
         {
@@ -212,7 +212,7 @@ class MLController {
           })),
           contamination,
         },
-        10000,
+        30000,
         1
       );
 
@@ -252,7 +252,7 @@ class MLController {
         });
       }
 
-      // Call ML service
+      // Call ML service (pure EMA/numpy time-series — no AI/Groq dependency)
       const mlResponse = await postToMlWithRetry(
         '/forecast',
         {
@@ -268,7 +268,7 @@ class MLController {
             })),
           forecast_days,
         },
-        10000,
+        30000,
         1
       );
 
