@@ -51,26 +51,19 @@ async function setCachedMlResult(cacheKey, data, ttlSeconds = ML_CACHE_TTL_SECON
   });
 }
 
-async function postToMlWithRetry(path, payload, timeout = 10000, maxRetries = 1) {
+async function postToMlWithRetry(path, payload, timeout = 60000, maxRetries = 1) {
   let attempt = 0;
 
   while (true) {
     try {
       return await axios.post(`${ML_SERVICE_URL}${path}`, payload, { timeout });
     } catch (error) {
-      const status = error?.response?.status;
-      if (status !== 429 || attempt >= maxRetries) {
+      if (attempt >= maxRetries) {
         throw error;
       }
-
-      const retryAfterHeader = error?.response?.headers?.['retry-after'];
-      const retryAfterSeconds = Number(retryAfterHeader);
-      const waitMs = Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
-        ? retryAfterSeconds * 1000
-        : 1500 * (attempt + 1);
-
       attempt += 1;
-      await sleep(waitMs);
+      console.warn(`ML request to ${path} failed (attempt ${attempt}/${maxRetries}), retrying in 3s...`);
+      await sleep(3000);
     }
   }
 }
@@ -131,11 +124,11 @@ class MLController {
         return ResponseHandler.success(res, 200, 'Clustering analysis complete (cached)', cached);
       }
 
-      // Fetch all available transactions for better clustering (up to 300)
+      // Limit to 100 most recent transactions to stay within Render free tier limits
       const transactions = await Transaction.find({ userId })
         .select('date amount type category merchantName')
         .sort({ date: -1 })
-        .limit(300)
+        .limit(100)
         .lean();
 
       if (transactions.length < 3) {
@@ -158,7 +151,7 @@ class MLController {
           })),
           n_clusters,
         },
-        30000,
+        60000,
         1
       );
 
@@ -185,11 +178,11 @@ class MLController {
         return ResponseHandler.success(res, 200, 'Anomaly detection complete (cached)', cached);
       }
 
-      // Fetch all available transactions for better anomaly detection (up to 200)
+      // Limit to 100 most recent transactions to stay within Render free tier limits
       const transactions = await Transaction.find({ userId })
         .select('date amount type category merchantName')
         .sort({ date: -1 })
-        .limit(200)
+        .limit(100)
         .lean();
 
       if (transactions.length < 5) {
@@ -212,7 +205,7 @@ class MLController {
           })),
           contamination,
         },
-        30000,
+        60000,
         1
       );
 
@@ -239,11 +232,11 @@ class MLController {
         return ResponseHandler.success(res, 200, 'Expense forecast generated (cached)', cached);
       }
 
-      // Fetch user transactions
+      // Limit to 100 most recent transactions to stay within Render free tier limits
       const transactions = await Transaction.find({ userId })
         .select('date amount type category merchantName')
         .sort({ date: -1 })
-        .limit(365) // Last year
+        .limit(100)
         .lean();
 
       if (transactions.length < 10) {
@@ -268,7 +261,7 @@ class MLController {
             })),
           forecast_days,
         },
-        30000,
+        60000,
         1
       );
 
