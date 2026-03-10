@@ -51,18 +51,19 @@ async function setCachedMlResult(cacheKey, data, ttlSeconds = ML_CACHE_TTL_SECON
   });
 }
 
-async function postToMlWithRetry(path, payload, timeout = 60000, maxRetries = 1) {
+async function postToMlWithRetry(path, payload, timeout = 55000, maxRetries = 1) {
   let attempt = 0;
 
   while (true) {
     try {
       return await axios.post(`${ML_SERVICE_URL}${path}`, payload, { timeout });
     } catch (error) {
+      console.error(`ML Error [${path}] attempt ${attempt + 1}:`, error.message, error.response?.data);
       if (attempt >= maxRetries) {
         throw error;
       }
       attempt += 1;
-      console.warn(`ML request to ${path} failed (attempt ${attempt}/${maxRetries}), retrying in 3s...`);
+      console.warn(`Retrying ${path} in 3s (attempt ${attempt}/${maxRetries})...`);
       await sleep(3000);
     }
   }
@@ -124,11 +125,11 @@ class MLController {
         return ResponseHandler.success(res, 200, 'Clustering analysis complete (cached)', cached);
       }
 
-      // Limit to 100 most recent transactions to stay within Render free tier limits
+      // Limit to 50 most recent transactions to stay within Render free tier limits
       const transactions = await Transaction.find({ userId })
         .select('date amount type category merchantName')
         .sort({ date: -1 })
-        .limit(100)
+        .limit(50)
         .lean();
 
       if (transactions.length < 3) {
@@ -137,7 +138,9 @@ class MLController {
         });
       }
 
-      // Call ML service (pure scikit-learn KMeans — no AI/Groq dependency)
+      console.log(`[ML cluster] sending ${transactions.length} transactions for user ${userId}`);
+
+      // Call ML service sequentially (one at a time — no parallel ML calls)
       const mlResponse = await postToMlWithRetry(
         '/cluster',
         {
@@ -147,11 +150,11 @@ class MLController {
             amount: t.amount,
             type: t.type,
             category: t.category,
-            merchantName: t.merchantName,
+            merchantName: t.merchantName || 'Unknown',
           })),
           n_clusters,
         },
-        60000,
+        55000,
         1
       );
 
@@ -178,11 +181,11 @@ class MLController {
         return ResponseHandler.success(res, 200, 'Anomaly detection complete (cached)', cached);
       }
 
-      // Limit to 100 most recent transactions to stay within Render free tier limits
+      // Limit to 50 most recent transactions to stay within Render free tier limits
       const transactions = await Transaction.find({ userId })
         .select('date amount type category merchantName')
         .sort({ date: -1 })
-        .limit(100)
+        .limit(50)
         .lean();
 
       if (transactions.length < 5) {
@@ -191,7 +194,9 @@ class MLController {
         });
       }
 
-      // Call ML service (pure scikit-learn IsolationForest — no AI/Groq dependency)
+      console.log(`[ML anomalies] sending ${transactions.length} transactions for user ${userId}`);
+
+      // Call ML service sequentially (one at a time — no parallel ML calls)
       const mlResponse = await postToMlWithRetry(
         '/anomalies',
         {
@@ -201,11 +206,11 @@ class MLController {
             amount: t.amount,
             type: t.type,
             category: t.category,
-            merchantName: t.merchantName,
+            merchantName: t.merchantName || 'Unknown',
           })),
           contamination,
         },
-        60000,
+        55000,
         1
       );
 
@@ -232,11 +237,11 @@ class MLController {
         return ResponseHandler.success(res, 200, 'Expense forecast generated (cached)', cached);
       }
 
-      // Limit to 100 most recent transactions to stay within Render free tier limits
+      // Limit to 50 most recent transactions to stay within Render free tier limits
       const transactions = await Transaction.find({ userId })
         .select('date amount type category merchantName')
         .sort({ date: -1 })
-        .limit(100)
+        .limit(50)
         .lean();
 
       if (transactions.length < 10) {
@@ -245,7 +250,9 @@ class MLController {
         });
       }
 
-      // Call ML service (pure EMA/numpy time-series — no AI/Groq dependency)
+      console.log(`[ML forecast] sending ${transactions.length} transactions for user ${userId}`);
+
+      // Call ML service sequentially (one at a time — no parallel ML calls)
       const mlResponse = await postToMlWithRetry(
         '/forecast',
         {
@@ -257,11 +264,11 @@ class MLController {
               amount: t.amount,
               type: t.type,
               category: t.category,
-              merchantName: t.merchantName,
+              merchantName: t.merchantName || 'Unknown',
             })),
           forecast_days,
         },
-        60000,
+        55000,
         1
       );
 
