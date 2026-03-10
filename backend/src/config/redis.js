@@ -26,10 +26,13 @@ class RedisClient {
                 password: process.env.REDIS_PASSWORD || undefined,
                 db: parseInt(process.env.REDIS_DB || '0', 10),
                 retryStrategy: (times) => {
-                    const delay = Math.min(times * 50, 2000);
-                    return delay;
+                    if (times > 3) {
+                        // Stop retrying — Redis is not available, use fallback
+                        return null;
+                    }
+                    return Math.min(times * 500, 2000);
                 },
-                maxRetriesPerRequest: 3,
+                maxRetriesPerRequest: 1,
                 enableReadyCheck: true,
                 lazyConnect: false
             };
