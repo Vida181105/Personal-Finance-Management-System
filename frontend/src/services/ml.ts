@@ -60,19 +60,22 @@ export interface ForecastResult {
 
 // ─── Service ──────────────────────────────────────────────────────────────────
 
+// ML calls can take up to 55s on Render free tier — override the default 15s axios timeout
+const ML_TIMEOUT = 65000;
+
 export const mlService = {
   getSpendingClusters: async (n_clusters = 5): Promise<SpendingClusters> => {
-    const res = await api.post('/ml/cluster', { n_clusters });
+    const res = await api.post('/ml/cluster', { n_clusters }, { timeout: ML_TIMEOUT });
     return res.data.data;
   },
 
   detectAnomalies: async (contamination = 0.1): Promise<AnomalyResult> => {
-    const res = await api.post('/ml/anomalies', { contamination });
+    const res = await api.post('/ml/anomalies', { contamination }, { timeout: ML_TIMEOUT });
     return res.data.data;
   },
 
   forecastExpenses: async (forecast_days = 30): Promise<ForecastResult> => {
-    const res = await api.post('/ml/forecast', { forecast_days });
+    const res = await api.post('/ml/forecast', { forecast_days }, { timeout: ML_TIMEOUT });
     return res.data.data;
   },
 };
